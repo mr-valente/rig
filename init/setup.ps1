@@ -1,3 +1,3 @@
 function rig {
-    git --git-dir=$HOME/.cfg/ --work-tree=$HOME @args
+    git --git-dir="$HOME/.rig" --work-tree=$HOME @args
 }
