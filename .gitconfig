@@ -3,3 +3,5 @@
 [user]
 	name = Nick Valente
 	email = nick.valente@oakknoll.org
+[status]
+	showUntrackedFiles = no
