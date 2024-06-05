@@ -21,6 +21,7 @@ source ~/.config/fish/aliases.fish
 # Launch Starship
 if type -q starship
     starship init fish | source
+end
 
 
 
