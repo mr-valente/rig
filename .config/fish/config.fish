@@ -19,7 +19,8 @@ source ~/.config/fish/aliases.fish
 # set -gx PATH /opt/cuda/bin $PATH
 
 # Launch Starship
-starship init fish | source
+if type -q starship
+    starship init fish | source
 
 
 
