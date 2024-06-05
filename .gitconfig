@@ -5,3 +5,5 @@
 	email = nick.valente@oakknoll.org
 [status]
 	showUntrackedFiles = no
+[core]
+	autocrlf = false

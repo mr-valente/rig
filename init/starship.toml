@@ -1,0 +1,95 @@
+################################################################################
+#                                                                              #
+#                      Starship Configuration File                             #
+#                                                                              #
+################################################################################  
+
+add_newline = true
+
+format = """
+[╭╴](59)[](59)\
+$shell$sudo[](fg:59 bg:60)\
+$git_branch$git_status$directory[](fg:60 bg:61)\
+$java$python$env_var[ ](fg:61)
+[│](59)
+[╰──](59)$character\
+"""
+
+right_format = """$time"""
+
+[character]
+success_symbol = "[ ](green)"
+error_symbol = "[ ](red)"
+
+[sudo]
+disabled = false
+format = "[$symbol]($style)"
+style = "bright-cyan bg:59"
+symbol = " "
+
+[shell]
+disabled = false
+format = "[$indicator]($style)"
+style = "cyan bg:59"
+bash_indicator = " "
+fish_indicator = "󰈺 "
+powershell_indicator = " "
+
+[directory]
+style = "green bg:60"
+truncation_length = 3
+truncation_symbol = "󰇘 /"
+home_symbol = " "
+read_only_style = "green bg:103"
+read_only = " "
+format = "[ $path ]($style)"
+
+[directory.substitutions]
+"Documents" = "󰈙"
+"Downloads" = " "
+"Music" = " "
+"Pictures" = " "
+
+[git_branch]
+symbol = "󰊢 "
+style = "green bg:60"
+format = '[ $symbol ]($style)'
+
+[git_status]
+style = "green bg:60"
+modified = "[](white bg:60)"
+untracked = "[](red bg:60)"
+staged = "[](green bg:60)"
+format = '[$all_status ]($style)'
+
+[java]
+symbol = ""
+style = "cyan bg:60"
+format = '[ $symbol ($version) ]($style)'
+
+[python]
+symbol = ""
+style = "yellow bg:61"
+format = '[ $symbol ($version) ]($style)'
+
+[env_var]
+variable = 'VIRTUAL_ENV'
+style = "yellow bg:61"
+symbol = "󰇺"
+format = '[ $symbol venv]($style)'
+
+[rust]
+symbol = ""
+style = "cyan bg:60"
+format = '[ $symbol ($version) ]($style)'
+
+[time]
+disabled = false
+time_format = "%c" # Hour:Minute Format
+style = "italic white"
+format = '[   $time ]($style)'
+
+[battery]
+charging_symbol = "󱟦"
+discharging_symbol = "󱟤"
+unknown_symbol = "󰂑"
