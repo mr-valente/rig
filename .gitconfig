@@ -1,9 +1,9 @@
-[push]
-	autoSetupRemote = true
 [user]
 	name = Nick Valente
 	email = nick.valente@oakknoll.org
-[status]
-	showUntrackedFiles = no
 [core]
 	autocrlf = false
+[push]
+	autoSetupRemote = true
+[status]
+	showUntrackedFiles = no
