@@ -1,2 +1,5 @@
 [push]
 	autoSetupRemote = true
+[user]
+	name = Nick Valente
+	email = nick.valente@oakknoll.org
