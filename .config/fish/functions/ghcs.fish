@@ -1,4 +1,4 @@
-function suggest
+function ghcs
     set TARGET "shell"
     set -l GH_DEBUG "$GH_DEBUG"
     set -l GH_HOST "$GH_HOST"
