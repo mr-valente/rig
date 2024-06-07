@@ -15,7 +15,7 @@ function rig {
     git --git-dir=$RIG --work-tree=$HOME @args 
 }
 
-function rig-update {
+function rig-upgrade {
 	params (
 		$Name
 	)
