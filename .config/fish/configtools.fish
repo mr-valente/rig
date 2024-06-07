@@ -1,15 +1,11 @@
 ################################################################################
 #                                                                              #
-#                              Fish Aliases                                    #
+#                              Fish Toolbox                                    #
 #                                                                              #
 ################################################################################
 
-# Set environment variables
-set RIG "$HOME/.rig"
-set DEV "$HOME/.dev"
-
 # Dotfile rigging
-alias rig="git --git-dir=$RIG --work-tree=$HOME"
+alias rig="git --git-dir=$RIG_HOME --work-tree=$HOME"
 
 function rig-up
     for arg in $argv

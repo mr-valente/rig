@@ -1,18 +1,12 @@
 ################################################################################
 #                                                                              #
-#                          PowerShell Functions                                #
+#                           PowerShell Toolbox                                 #
 #                                                                              #
 ################################################################################
 
-
-# Set envrioment variables
-$RIG = "$HOME/.rig"
-$DEV = "$HOME/.dev"
-
-
 # Dotfile rigging
 function rig { 
-    git --git-dir=$RIG --work-tree=$HOME $args 
+    git --git-dir=$env:RIG_HOME --work-tree=$HOME $args 
 }
 
 function rig-up {
@@ -29,6 +23,7 @@ function rig-down {
 	rig reset --hard HEAD
 	rig pull
 }
+
 
 # Github Copilot
 function suggest {

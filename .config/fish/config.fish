@@ -8,11 +8,8 @@
 fish_logo cyan blue green ω Ω
 set fish_greeting "Go fish !!"
 
-# Load aliases
-source ~/.config/fish/configtools.fish
-
-# Add CUDA binaries to PATH
-# set -gx PATH /opt/cuda/bin $PATH
+# Load toolbox
+source $XDG_CONFIG_HOME/fish/configtools.fish
 
 # Launch Starship
 if type -q starship
