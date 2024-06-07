@@ -22,6 +22,7 @@ function rig-up {
 	}
 	$commitMessage = "Modified " + ($args -join ", ")
 	rig commit -m $commitMessage
+	rig push
 }
 
 function rig-down {

@@ -18,6 +18,7 @@ function rig-up
     end
     set commitMessage "Modified "(string join ", " $argv)
     rig commit -m "$commitMessage"
+    rig push
 end
 
 function rig-down
