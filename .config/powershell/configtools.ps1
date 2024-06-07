@@ -16,10 +16,10 @@ function rig {
 }
 
 function rig-upgrade {
-	params (
+	param (
 		$Name
 	)
-	rig add $HOME\.config\$Name
+	rig add $HOME\$Name
 	rig commit -m "Updated $Name"
 }
 
