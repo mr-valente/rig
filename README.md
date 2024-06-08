@@ -5,10 +5,10 @@ Under construction 🚧
 
 1. Clone and checkout repo (remove `--force` option if you don't want to overwrite duplicates)
 
-```
-git clone --bare https://github.com/mr-valente/rig.git "$HOME/.rig"
-git --git-dir="$HOME/.rig" --work-tree=$HOME checkout --force
-```
+    ```
+    git clone --bare https://github.com/mr-valente/rig.git "$HOME/.rig"
+    git --git-dir="$HOME/.rig" --work-tree=$HOME checkout --force
+    ```
 
 2. Initialize:
 
