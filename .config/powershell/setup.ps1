@@ -1,7 +1,7 @@
 # Define XDG Base Directory variables
-$env:XDG_CONFIG_HOME = "$HOME/.config"
-$env:XDG_DATA_HOME = "$HOME/.local/share"
-$env:XDG_CACHE_HOME = "$HOME/.cache"
+$env:XDG_CONFIG_HOME = "$HOME\.config"
+$env:XDG_DATA_HOME = "$HOME\.local\share"
+$env:XDG_CACHE_HOME = "$HOME\.cache"
 
 # Set the XDG Base Directory variables in the environment
 [Environment]::SetEnvironmentVariable('XDG_CONFIG_HOME', $env:XDG_CONFIG_HOME, 'User')
