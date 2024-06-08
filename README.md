@@ -1,2 +1,2 @@
-# dotfiles
-testing!
+# Nick's Config Rig
+Under construction 🚧
