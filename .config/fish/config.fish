@@ -9,7 +9,7 @@ fish_logo cyan blue green ω Ω
 set fish_greeting "Go fish !!"
 
 # Load toolbox
-source $XDG_CONFIG_HOME/fish/configtools.fish
+source ~/.config/fish/configtools.fish
 
 # Launch Starship
 if type -q starship

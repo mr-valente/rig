@@ -4,6 +4,10 @@
 #                                                                              #
 ################################################################################
 
+# Set local variables
+set -l RIG_HOME $HOME/.rig
+
+
 # Dotfile rigging
 alias rig="git --git-dir=$RIG_HOME --work-tree=$HOME"
 
