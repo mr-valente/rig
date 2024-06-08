@@ -4,9 +4,12 @@
 #                                                                              #
 ################################################################################
 
+# Set local variables
+$RIG_HOME = "$HOME\.rig"
+
 # Dotfile rigging
 function rig { 
-    git --git-dir=$env:RIG_HOME --work-tree=$HOME $args 
+    git --git-dir=$RIG_HOME --work-tree=$HOME $args 
 }
 
 function rig-up {

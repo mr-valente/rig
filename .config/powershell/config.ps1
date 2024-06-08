@@ -11,7 +11,7 @@ write-host "
  ╚╩╝└─┘┴─┘└─┘└─┘┴ ┴└─┘   ┴ └─┘  ╚═╝┴  ┴ ┴└─┘└─┘└─┘┴ ┴┴┴    ╚═╝┴ ┴┴└─ ┴ ┴ ┴"
 
 # Load toolbox
-. "$env:XDG_CONFIG_HOME\powershell\configtools.ps1"
+. "$HOME\.config\powershell\configtools.ps1"
 
 # Check if Starship exists
 if (Get-Command starship -ErrorAction SilentlyContinue) {
