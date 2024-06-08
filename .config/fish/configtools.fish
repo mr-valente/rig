@@ -10,6 +10,7 @@ set -l RIG_HOME $HOME/.rig
 
 # Dotfile rigging
 alias rig="git --git-dir=$RIG_HOME --work-tree=$HOME"
+alias rig-reset="rig reset --hard HEAD"
 
 function rig-up
     for arg in $argv

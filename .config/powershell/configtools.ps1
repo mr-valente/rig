@@ -13,6 +13,10 @@ function rig {
     git --git-dir=$RIG_HOME --work-tree=$HOME $args 
 }
 
+function rig-reset {
+	rig reset --hard HEAD
+}
+
 function rig-up {
 	foreach ($arg in $args) {
     	rig add $HOME\$arg
