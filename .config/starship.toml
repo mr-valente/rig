@@ -51,7 +51,7 @@ format = "[ $path ]($style)"
 "Pictures" = " "
 
 [git_branch]
-symbol = "󰊢 "
+symbol = " "
 style = "green bg:60"
 format = '[ $symbol ]($style)'
 
