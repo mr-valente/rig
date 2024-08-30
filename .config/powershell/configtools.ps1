@@ -8,6 +8,14 @@
 $RIG_HOME = "$HOME\.rig"
 
 
+# Helper functions
+function reload {
+    Clear-Host
+    cd $HOME
+    . $PROFILE
+}
+
+
 # Config rig functions
 function rig { 
     git --git-dir=$RIG_HOME --work-tree=$HOME $args 
