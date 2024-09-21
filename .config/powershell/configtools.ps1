@@ -80,3 +80,49 @@ function suggest {
 function explain {
 	gh copilot explain $args
 }
+
+# Ghostscript tools
+function Merge-PDFs {
+    param (
+        [string]$FolderPath,     # Path to the folder containing PDF files
+        [string]$OutputFile      # Path to the output PDF file
+    )
+
+    # Check if the folder exists
+    if (-not (Test-Path $FolderPath)) {
+        Write-Host "The specified folder does not exist." -ForegroundColor Red
+        return
+    }
+
+    # Get all PDF files in the folder and sort them alphabetically
+    $pdfFiles = Get-ChildItem -Path $FolderPath -Filter "*.pdf" | Sort-Object Name
+
+    if ($pdfFiles.Count -eq 0) {
+        Write-Host "No PDF files found in the specified folder." -ForegroundColor Yellow
+        return
+    }
+
+    # Prepare an array of input PDF file paths
+    $inputFiles = $pdfFiles | ForEach-Object { $_.FullName }
+
+    # Check if Ghostscript is installed and accessible
+    $ghostscriptPath = "gs"  # Assumes gs is in PATH. Adjust if Ghostscript isn't in PATH.
+    $gsTest = Get-Command $ghostscriptPath -ErrorAction SilentlyContinue
+
+    if (-not $gsTest) {
+        Write-Host "Ghostscript is not installed or not in PATH." -ForegroundColor Red
+        return
+    }
+
+    # Build the Ghostscript command
+    $inputFilesString = $inputFiles -join " "
+    $gsCommand = "-dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=`"$OutputFile`" $inputFilesString"
+
+    try {
+        # Run the Ghostscript command
+        Start-Process $ghostscriptPath -ArgumentList $gsCommand -NoNewWindow -Wait
+        Write-Host "PDF merge successful. Output file: $OutputFile" -ForegroundColor Green
+    } catch {
+        Write-Host "Error merging PDFs: $_" -ForegroundColor Red
+    }
+}
