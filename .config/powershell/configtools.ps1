@@ -4,8 +4,22 @@
 #                                                                              #
 ################################################################################
 
-# Set local variables
+# Set XDG variables
+$CACHE = $env:XDG_CACHE_HOME
+$CONFIG = $env:XDG_CONFIG_HOME
+$DATA = $env:XDG_DATA_HOME
+
+# Set dev variables
+$DEV = "$HOME\.dev"
 $RIG_HOME = "$HOME\.rig"
+
+# Set home variables
+$DESKTOP = "$HOME\Desktop"
+$DOCUMENTS = "$HOME\Documents"
+$DOWNLOADS = "$HOME\Downloads"
+$MUSIC = "$HOME\Music"
+$PICTURES = "$HOME\Pictures"
+$VIDEOS = "$HOME\Videos"
 
 
 # Helper functions
@@ -17,7 +31,6 @@ function reload {
 
 
 # Config rig functions
-
 function rig { 
     # Run git command in rig mode
     git --git-dir=$RIG_HOME --work-tree=$HOME $args 

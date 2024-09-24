@@ -45,10 +45,12 @@ read_only = " "
 format = "[ $path ]($style)"
 
 [directory.substitutions]
-"Documents" = "󰈙"
-"Downloads" = " "
-"Music" = " "
-"Pictures" = " "
+"Desktop" = "  "
+"Documents" = " 󰈙"
+"Downloads" = "  "
+"Music" = "  "
+"Pictures" = "  "
+"Videos" = "  "
 
 [git_branch]
 symbol = " "
@@ -85,7 +87,7 @@ format = '[ $symbol ($version) ]($style)'
 
 [time]
 disabled = false
-time_format = "%c" # Hour:Minute Format
+time_format = "%T" # Hour-minute-second format. Same to %H:%M:%S. 
 style = "italic white"
 format = '[   $time ]($style)'
 
