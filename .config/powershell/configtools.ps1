@@ -29,6 +29,11 @@ function reload {
     . $PROFILE
 }
 
+function hlx {
+    # Alias helix with custom config
+    hx -c $CONFIG\helix\config.toml $args
+}
+
 
 # Config rig functions
 function rig { 
