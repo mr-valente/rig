@@ -11,25 +11,27 @@ Example:
 ```json
 "schemes": [
     {
-        "name" : "Dracula PRO",
-        "background" : "#22212C",
-        "black" : "#22212C",
-        "blue" : "#9580FF",
-        "brightBlack" : "#504C67",
-        "brightBlue" : "#AA99FF",
-        "brightCyan" : "#99FFEE",
-        "brightGreen" : "#A2FF99",
-        "brightPurple" : "#FF99CC",
-        "brightRed" : "#FFAA99",
-        "brightWhite" : "#FFFFFF",
-        "brightYellow" : "#FFFF99",
-        "cyan" : "#80FFEA",
-        "foreground" : "#F8F8F2",
-        "green" : "#8AFF80",
-        "purple" : "#FF80BF",
-        "red" : "#FF9580",
-        "white" : "#F8F8F2",
-        "yellow" : "#FFFF80"
+        "name": "Dracula Pro",
+        "background": "#22212C",
+        "cursorColor": "#9580FF",
+        "selectionBackground": "#454158",
+        "black": "#22212C",
+        "blue": "#9580FF",
+        "brightBlack": "#504C67",
+        "brightBlue": "#AA99FF",
+        "brightCyan": "#99FFEE",
+        "brightGreen": "#A2FF99",
+        "brightPurple": "#FF99CC",
+        "brightRed": "#FFAA99",
+        "brightWhite": "#FFFFFF",
+        "brightYellow": "#FFFF99",
+        "cyan": "#80FFEA",
+        "foreground": "#F8F8F2",
+        "green": "#8AFF80",
+        "purple": "#FF80BF",
+        "red": "#FF9580",
+        "white": "#F8F8F2",
+        "yellow": "#FFFF80"
     }
 ]
 ```
@@ -43,7 +45,7 @@ Example:
 ```json
 "profiles": {
     "defaults": {
-        "colorScheme" : "Dracula PRO"
+        "colorScheme" : "Dracula Pro"
     }
 }
 ```
