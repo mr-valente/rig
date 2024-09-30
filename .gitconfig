@@ -7,3 +7,5 @@
 	autoSetupRemote = true
 [status]
 	showUntrackedFiles = no
+[credential]
+	helper = manager
