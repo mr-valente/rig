@@ -54,14 +54,13 @@ function rig-ignore
 end
 
 
-
 # GitHub Copilot
 alias suggest="gh copilot suggest"
 alias explain="gh copilot explain"
 
 
 # Arch Linux / Pacman
-alias pacplay="sudo pacman -Syu"
-alias pacsearch="sudo pacman -Ss"
-alias pacslay="sudo pacman -Rs"
-alias packey="pacman -Sy archlinux-keyring && pacman -Su"
+# alias pacplay="sudo pacman -Syu"
+# alias pacsearch="sudo pacman -Ss"
+# alias pacslay="sudo pacman -Rs"
+# alias packey="pacman -Sy archlinux-keyring && pacman -Su"
