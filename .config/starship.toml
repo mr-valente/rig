@@ -8,8 +8,8 @@ add_newline = true
 
 format = """
 [╭╴](59)[](59)\
-$shell$sudo[](fg:59 bg:60)\
-$git_branch$git_status$directory$hostname[](fg:60 bg:61)\
+$hostname$shell$sudo[](fg:59 bg:60)\
+$git_branch$git_status$directory[](fg:60 bg:61)\
 $java$python$env_var[ ](fg:61)
 [│](59)
 [╰──](59)$character\
@@ -39,9 +39,9 @@ powershell_indicator = " "
 disabled = false
 detect_env_vars = ['REMOTEHOST']
 ssh_only = true
-format = '[ $ssh_symbol ]($style)'
-style = "green bg:60"
-ssh_symbol = " "
+format = '[$ssh_symbol]($style)'
+style = "bright-cyan bg:59"
+ssh_symbol = "󰑔 "
 
 [directory]
 style = "green bg:60"
@@ -82,16 +82,17 @@ symbol = ""
 style = "yellow bg:61"
 format = '[ $symbol ($version) ]($style)'
 
+[rust]
+symbol = ""
+style = "cyan bg:60"
+format = '[ $symbol ($version) ]($style)'
+
 [env_var]
 variable = 'VIRTUAL_ENV'
 style = "yellow bg:61"
 symbol = "󰇺"
 format = '[ $symbol venv]($style)'
 
-[rust]
-symbol = ""
-style = "cyan bg:60"
-format = '[ $symbol ($version) ]($style)'
 
 [time]
 disabled = false
