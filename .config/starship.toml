@@ -41,7 +41,7 @@ detect_env_vars = ['REMOTEHOST']
 ssh_only = true
 format = '[$ssh_symbol]($style)'
 style = "bright-cyan bg:59"
-ssh_symbol = "󰑔 "
+ssh_symbol = "󰌆 "
 
 [directory]
 style = "green bg:60"
