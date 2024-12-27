@@ -1,3 +1,3 @@
 function fish_title
-    echo "SPACESHIP-EARTH"
+    echo "Spaceship Earth"
 end

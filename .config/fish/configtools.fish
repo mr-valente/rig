@@ -4,12 +4,11 @@
 #                                                                              #
 ################################################################################
 
-# Set XDG Base Directories
-set -gx XDG_CONFIG_HOME $HOME/.config
-set -gx XDG_DATA_HOME $HOME/.local/share
-set -gx XDG_CACHE_HOME $HOME/.cache
 
 # Set local variables
+set -l CACHE $XDG_CACHE_HOME
+set -l CONFIG $XDG_CONFIG_HOME
+set -l DATA $XDG_DATA_HOME
 set -l DEV $HOME/.dev
 set -l RIG_HOME $HOME/.rig
 
