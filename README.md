@@ -19,6 +19,6 @@ Under construction 🚧
 
     * `fish`: 
         ```
-        source "$HOME/.config/fish/config.fish"
+        source "$HOME/.config/fish/setup.fish"
         ```
   
