@@ -19,10 +19,11 @@ if type -q /home/linuxbrew/.linuxbrew/bin/brew
     eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv)
 end
 
-# Launch Starship
-if type -q starship
+# Launch Starship for 
+if type -q starship; and test "$TERM" = "xterm-256color"
     starship init fish | source
 end
+
 
 
 
