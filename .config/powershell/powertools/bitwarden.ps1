@@ -6,11 +6,14 @@ $BW_PASSWORD = [Environment]::GetEnvironmentVariable("BW_PASSWORD", "User")
 function bw-unlock {
     ((bw unlock --passwordenv BW_PASSWORD) -match 'env:BW_SESSION=".*"')[0].split('> ')[1] | Invoke-Expression
 }
+
 function bw-search($id) {
-    bw-unlock
     bw list items --search $id --pretty
 }
+
 function bw-get($id) {
+    bw-unlock
+
     $results = bw-search($id)
     $count = ($results -match "object").length
 
@@ -27,7 +30,7 @@ function bw-get($id) {
             write-host "Password copied to clipboard. Please run 'Clear-Clip' after use."
         }
         default {
-            $results | jq
+            $results | ConvertFrom-Json | Format-Table
             write-host "Error: Multiple results found"
         }
     }
