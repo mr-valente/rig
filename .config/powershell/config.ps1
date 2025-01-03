@@ -15,7 +15,7 @@ write-host "
 
 # Check if Starship exists
 # if (Get-Command starship -ErrorAction SilentlyContinue) {
-if (CommandExists "starship") {
+if (Command-Exists "starship") {
     # Launch Starship
     Invoke-Expression (&starship init powershell)
 }

@@ -30,22 +30,22 @@ $POWERTOOLS = "$CONFIG\powershell\powertools"
 . "$POWERTOOLS\rig.ps1"
 
 # Github Copilot
-if (CommandExists "gh") {
+if (Command-Exists "gh") {
     . "$POWERTOOLS\copilot.ps1"
 }
 
 # Helix
-if (CommandExists "hx") {
+if (Command-Exists "hx") {
     . "$POWERTOOLS\helix.ps1"
 }
 
 # Ghostscript
-if (CommandExists "gs") {    
+if (Command-Exists "gs") {    
     . "$POWERTOOLS\ghostscript.ps1"
 }
 
 # Bitwarden
-if (CommandExists "bw") {
+if (Command-Exists "bw") {
     . "$POWERTOOLS\bitwarden.ps1"
 }
 

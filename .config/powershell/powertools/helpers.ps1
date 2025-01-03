@@ -1,10 +1,14 @@
-function reload {
+function Reload {
     Clear-Host
     cd $HOME
     . $PROFILE
 }
 
-function CommandExists {
+function Clear-Clip { 
+    '' | clip
+}
+
+function Command-Exists {
     param (
         [string]$Name
     )

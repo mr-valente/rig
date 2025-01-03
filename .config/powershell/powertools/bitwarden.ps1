@@ -2,9 +2,7 @@ $BW_CLIENTID = [Environment]::GetEnvironmentVariable("BW_CLIENTID", "User")
 $BW_CLIENTSECRET = [Environment]::GetEnvironmentVariable("BW_CLIENTSECRET", "User")
 $BW_PASSWORD = [Environment]::GetEnvironmentVariable("BW_PASSWORD", "User")
 
-function bw-clear { 
-    '' | clip
-}
+
 function bw-unlock {
     ((bw unlock --passwordenv BW_PASSWORD) -match 'env:BW_SESSION=".*"')[0].split('> ')[1] | Invoke-Expression
 }
@@ -25,8 +23,8 @@ function bw-get($id) {
             $username = bw get username $id
             $password = bw get password $id
             $password | clip
-            write-host $username
-            write-host $password
+            write-host "Username: $username"
+            write-host "Password copied to clipboard. Please run 'Clear-Clip' after use."
         }
         default {
             $results | jq
