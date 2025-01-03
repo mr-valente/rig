@@ -14,7 +14,8 @@ write-host "
 . "$env:XDG_CONFIG_HOME\powershell\configtools.ps1"
 
 # Check if Starship exists
-if (Get-Command starship -ErrorAction SilentlyContinue) {
+# if (Get-Command starship -ErrorAction SilentlyContinue) {
+if (CommandExists "starship") {
     # Launch Starship
     Invoke-Expression (&starship init powershell)
 }
