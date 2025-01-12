@@ -43,7 +43,6 @@ function Merge-PDFs {
     }
 }
 
-
 function Image-PDF {
     param (
         [string]$InputPath,                   # Path to the PDF file

@@ -1,4 +1,4 @@
 function hlx {
     # Alias helix with custom config
-    hx -c $CONFIG\helix\config.toml $args
+    hx -c $env:XDG_CONFIG_HOME\helix\config.toml $args
 }
