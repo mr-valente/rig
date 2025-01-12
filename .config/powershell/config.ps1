@@ -26,6 +26,9 @@ $POWERTOOLS = "$env:XDG_CONFIG_HOME\powershell\powertools"
 # Config Rig
 . "$POWERTOOLS\rig.ps1"
 
+# Starship
+. "$POWERTOOLS\starship.ps1"
+
 # Github Copilot
 . "$POWERTOOLS\copilot.ps1"
 
@@ -37,6 +40,8 @@ $POWERTOOLS = "$env:XDG_CONFIG_HOME\powershell\powertools"
 
 # Bitwarden
 . "$POWERTOOLS\bitwarden.ps1"
+
+
 
 
 # # Load toolbox
