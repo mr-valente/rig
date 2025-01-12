@@ -11,28 +11,22 @@ set -g fish_greeting "
  ║║║├┤ │  │  │ ││││├┤    │ │ │  ╚═╗├─┘├─┤│  ├┤ └─┐├─┤│├─┘  ║╣ ├─┤├┬┘ │ ├─┤
  ╚╩╝└─┘┴─┘└─┘└─┘┴ ┴└─┘   ┴ └─┘  ╚═╝┴  ┴ ┴└─┘└─┘└─┘┴ ┴┴┴    ╚═╝┴ ┴┴└─ ┴ ┴ ┴"
 
-# Load toolbox
-source $XDG_CONFIG_HOME/fish/configtools.fish
+set -l TACKLEBOX $XDG_CONFIG_HOME/fish/tacklebox
 
-# Launch Homebrew shell environment
-if type -q /home/linuxbrew/.linuxbrew/bin/brew
-    eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv)
-end
+# Helper functions
+source $TACKLEBOX/helpers.fish
 
-# Launch Starship for 
-if type -q starship; and test "$TERM" = "xterm-256color"
-    starship init fish | source
-end
+# Config rig functions
+source $TACKLEBOX/rig.fish
 
+# GitHub Copilot
+source $TACKLEBOX/copilot.fish
 
+# Homebrew
+source $TACKLEBOX/homebrew.fish
 
+# pyenv
+source $TACKLEBOX/pyenv.fish
 
-
-
-
-
-
-
-
-
-
+# Starship
+source $TACKLEBOX/starship.fish
