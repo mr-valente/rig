@@ -10,7 +10,7 @@ format = """
 [╭╴](59)[](59)\
 $hostname$shell$sudo[](fg:59 bg:60)\
 $git_branch$git_status$directory[](fg:60 bg:61)\
-$java$python$env_var[ ](fg:61)
+$java$python$rlang$env_var[ ](fg:61)
 [│](59)
 [╰──](59)$character\
 """
@@ -82,10 +82,11 @@ symbol = ""
 style = "yellow bg:61"
 format = '[ $symbol ($version) ]($style)'
 
-[rust]
-symbol = ""
-style = "cyan bg:60"
+[rlang]
+symbol = ""
+style = "yellow bg:61"
 format = '[ $symbol ($version) ]($style)'
+
 
 [env_var]
 variable = 'VIRTUAL_ENV'
