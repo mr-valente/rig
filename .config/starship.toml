@@ -37,7 +37,7 @@ powershell_indicator = " "
 
 [hostname]
 disabled = false
-detect_env_vars = ['REMOTEHOST']
+detect_env_vars = ['SSH_CLIENT', 'SSH_CONNECTION']
 ssh_only = true
 format = '[$ssh_symbol]($style)'
 style = "bright-cyan bg:59"
