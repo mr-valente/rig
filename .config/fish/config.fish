@@ -31,8 +31,5 @@ source $TACKLEBOX/pipx.fish
 # pyenv
 source $TACKLEBOX/pyenv.fish
 
-# R 
-source $TACKLEBOX/R.fish
-
 # Starship
 source $TACKLEBOX/starship.fish
