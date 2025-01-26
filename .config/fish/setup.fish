@@ -10,3 +10,4 @@ source $PROFILE
 rig config --global core.autocrlf false
 rig config --global push.autoSetupRemote true
 rig config --global status.showUntrackedFiles no
+rig config --global init.defaultBranch main
