@@ -23,13 +23,16 @@ source $TACKLEBOX/rig.fish
 source $TACKLEBOX/copilot.fish
 
 # Homebrew
-source $TACKLEBOX/homebrew.fish
+# source $TACKLEBOX/homebrew.fish
 
 # pipx
-source $TACKLEBOX/pipx.fish
+# source $TACKLEBOX/pipx.fish
 
 # pyenv
-source $TACKLEBOX/pyenv.fish
+# source $TACKLEBOX/pyenv.fish
+
+# pacman
+source $TACKLEBOX/pacman.fish
 
 # Starship
 source $TACKLEBOX/starship.fish
