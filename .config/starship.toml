@@ -85,6 +85,7 @@ format = '[ $symbol ($version) ]($style)'
 [rlang]
 symbol = ""
 style = "yellow bg:61"
+detect_files = ['.Rproj']
 format = '[ $symbol ($version) ]($style)'
 
 
