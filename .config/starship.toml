@@ -81,7 +81,6 @@ format = '[ $symbol ($version) ]($style)'
 symbol = ""
 style = "yellow bg:61"
 format = '[ $symbol ($version) ]($style)'
-pyenv_version_name = true
 
 [rlang]
 symbol = ""
