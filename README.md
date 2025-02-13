@@ -1,4 +1,4 @@
-# Nick's Config Rig
+# My Config Rig
 Under construction 🚧
 
 ## Installing the repository
