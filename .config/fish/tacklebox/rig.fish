@@ -47,12 +47,21 @@
 #     - Pushing ensures the ignore rules are shared across clones of the repository.
 
 set -l RIG_HOME $HOME/.rig
+set -l RIG_BRANCH "arch"
 
 alias rig="git --git-dir=$RIG_HOME --work-tree=$HOME"
 
 alias rig-reset="rig reset --hard HEAD"
 
 alias rig-list="rig ls-tree -r HEAD --name-only"
+
+function rig-push
+    rig push origin $RIG_BRANCH
+end
+
+function rig-pull
+    rig pull origin $RIG_BRANCH
+end
 
 function rig-up
     for arg in $argv
@@ -61,12 +70,12 @@ function rig-up
     end
     set commitMessage "Modified "(string join ", " $argv)
     rig commit -m "$commitMessage"
-    rig push
+    rig-push
 end
 
 function rig-down
     rig reset --hard HEAD
-    rig pull
+    rig-pull
 end
 
 function rig-remove
@@ -76,7 +85,7 @@ function rig-remove
     end
     set commitMessage "Removed "(string join ", " $argv)
     rig commit -m "$commitMessage"
-    rig push
+    rig-push
 end
 
 function rig-ignore
@@ -86,5 +95,5 @@ function rig-ignore
     end
     rig add $HOME/.gitignore
     rig commit -m "Updated .gitignore"
-    rig push
+    rig-push
 end
