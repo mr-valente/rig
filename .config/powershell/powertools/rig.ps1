@@ -1,8 +1,36 @@
 $RIG_HOME = "$HOME\.rig"
+$RIG_BRANCH = "windows"
 
 function rig { 
     # Run git command in rig mode
     git --git-dir=$RIG_HOME --work-tree=$HOME $args 
+}
+
+function rig-push {
+    # Push changes to the rig repository
+    rig push origin $RIG_BRANCH
+}
+
+function rig-pull {
+    # Pull changes from the rig repository
+    rig pull origin $RIG_BRANCH
+}
+
+function rig-up {
+    # Add files to the rig repository
+	foreach ($arg in $args) {
+    	rig add $HOME\$arg
+		echo "Added $arg"
+	}
+	$commitMessage = "Modified " + ($args -join ", ")
+	rig commit -m $commitMessage
+	rig-push
+}
+
+function rig-down {
+    # Pull changes from the rig repository
+	rig reset --hard HEAD
+	rig-pull
 }
 
 function rig-reset {
@@ -15,23 +43,6 @@ function rig-list {
     rig ls-tree -r HEAD --name-only
 }
 
-function rig-up {
-    # Add files to the rig repository
-	foreach ($arg in $args) {
-    	rig add $HOME\$arg
-		echo "Added $arg"
-	}
-	$commitMessage = "Modified " + ($args -join ", ")
-	rig commit -m $commitMessage
-	rig push
-}
-
-function rig-down {
-    # Pull changes from the rig repository
-	rig reset --hard HEAD
-	rig pull
-}
-
 function rig-remove {
     # Remove files from the rig repository
     foreach ($arg in $args) {
@@ -40,7 +51,7 @@ function rig-remove {
     }
     $commitMessage = "Removed " + ($args -join ", ")
     rig commit -m $commitMessage
-    rig push
+    rig-push
 }
 
 function rig-ignore {
@@ -51,5 +62,5 @@ function rig-ignore {
     }
     rig add $HOME\.gitignore
     rig commit -m "Updated .gitignore"
-    rig push
+    rig-push
 }
