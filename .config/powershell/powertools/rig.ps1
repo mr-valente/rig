@@ -19,7 +19,7 @@ function rig-pull {
 function rig-up {
     # Add files to the rig repository
 	foreach ($arg in $args) {
-    	rig add $arg
+    	rig add $HOME\$arg
 		echo "Added $arg"
 	}
 	$commitMessage = "Modified " + ($args -join ", ")
