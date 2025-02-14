@@ -7,7 +7,7 @@ Under construction 🚧
 
     ```
     git clone --bare https://github.com/mr-valente/rig.git "$HOME/.rig"
-    git --git-dir="$HOME/.rig" --work-tree=$HOME checkout --force
+    git --git-dir="$HOME/.rig" --work-tree=$HOME checkout $RIG_BRANCH --force
     ```
 
 2. Initialize:
