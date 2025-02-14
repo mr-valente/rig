@@ -1,4 +1,4 @@
-# Nick's Config Rig
+# My Window's Config Rig
 Under construction 🚧
 
 ## Installing the repository
