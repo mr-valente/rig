@@ -80,7 +80,7 @@ end
 
 function rig-remove
     for arg in $argv
-        rig rm --cached $HOME/$arg
+        rig rm -r --cached $HOME/$arg
         echo "Removed $arg"
     end
     set commitMessage "Removed "(string join ", " $argv)
