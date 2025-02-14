@@ -41,7 +41,7 @@ detect_env_vars = ['SSH_CLIENT', 'SSH_CONNECTION']
 ssh_only = true
 format = '[$ssh_symbol]($style)'
 style = "bright-cyan bg:59"
-ssh_symbol = " | "
+ssh_symbol = "󰌆 "
 
 [directory]
 style = "green bg:60"
@@ -89,7 +89,7 @@ style = "yellow bg:61"
 detect_files = ['.Rprofile']
 format = '[ $symbol ($version) ]($style)'
 
-
+# Poetry shell deprecated (for now)
 [env_var]
 variable = 'VIRTUAL_ENV'
 style = "yellow bg:61"
@@ -101,7 +101,7 @@ format = '[ $symbol venv]($style)'
 disabled = false
 time_format = "%T" # Hour-minute-second format. Same to %H:%M:%S. 
 style = "italic white"
-format = '[   $time ]($style)'
+format = '[ $time ]($style)'
 
 [battery]
 charging_symbol = "󱟦"
