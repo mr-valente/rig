@@ -104,11 +104,6 @@ if exists /home/linuxbrew/.linuxbrew/bin/brew
 end
 
 
-# pipx
-# source $TACKLEBOX/pipx.fish
-fish_add_path $HOME/.local/bin
-
-
 # pyenv
 # source $TACKLEBOX/pyenv.fish
 if exists $HOME/.pyenv/bin/pyenv
