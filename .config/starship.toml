@@ -103,7 +103,3 @@ time_format = "%T" # Hour-minute-second format. Same to %H:%M:%S.
 style = "italic white"
 format = '[ $time ]($style)'
 
-[battery]
-charging_symbol = "󱟦"
-discharging_symbol = "󱟤"
-unknown_symbol = "󰂑"
