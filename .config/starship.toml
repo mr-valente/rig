@@ -8,14 +8,14 @@ add_newline = true
 
 format = """
 [╭╴](59)[](59)\
-$hostname$shell$sudo[](fg:59 bg:60)\
+$sudo$shell[](fg:59 bg:60)\
 $git_branch$git_status$directory[](fg:60 bg:61)\
-$java$python$rlang$env_var[ ](fg:61)
+$java$python$rlang[ ](fg:61)
 [│](59)
 [╰──](59)$character\
 """
 
-right_format = """$time"""
+right_format = """$hostname $time"""
 
 [character]
 success_symbol = "[ ](green)"
@@ -36,12 +36,11 @@ fish_indicator = "󰈺 "
 powershell_indicator = " "
 
 [hostname]
-disabled = false
 detect_env_vars = ['SSH_CLIENT', 'SSH_CONNECTION']
 ssh_only = true
-format = '[$ssh_symbol]($style)'
-style = "bright-cyan bg:59"
-ssh_symbol = "󰌆 "
+format = '[$ssh_symbol$hostname]($style)'
+style = "bright-cyan"
+ssh_symbol = "󱗆 " 
 
 [directory]
 style = "green bg:60"
@@ -90,11 +89,11 @@ detect_files = ['.Rprofile']
 format = '[ $symbol ($version) ]($style)'
 
 # Poetry shell deprecated (for now)
-[env_var]
-variable = 'VIRTUAL_ENV'
-style = "yellow bg:61"
-symbol = "󰇺"
-format = '[ $symbol venv]($style)'
+# [env_var]
+# variable = 'VIRTUAL_ENV'
+# style = "yellow bg:61"
+# symbol = "󰇺"
+# format = '[ $symbol venv]($style)'
 
 
 [time]
