@@ -22,15 +22,6 @@ source $TACKLEBOX/rig.fish
 # GitHub Copilot
 source $TACKLEBOX/copilot.fish
 
-# Homebrew
-# source $TACKLEBOX/homebrew.fish
-
-# pipx
-# source $TACKLEBOX/pipx.fish
-
-# pyenv
-# source $TACKLEBOX/pyenv.fish
-
 # pacman
 source $TACKLEBOX/pacman.fish
 
