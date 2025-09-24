@@ -1,3 +1,3 @@
 function fish_title
-    echo "Spaceship Earth"
+    echo $hostname
 end
