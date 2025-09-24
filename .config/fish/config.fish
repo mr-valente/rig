@@ -12,18 +12,10 @@ set -g fish_greeting "
  ╚╩╝└─┘┴─┘└─┘└─┘┴ ┴└─┘   ┴ └─┘  ╚═╝┴  ┴ ┴└─┘└─┘└─┘┴ ┴┴┴    ╚═╝┴ ┴┴└─ ┴ ┴ ┴"
 
 set -l TACKLEBOX $XDG_CONFIG_HOME/fish/tacklebox
+source $TACKLEBOX/helpers.fish      # Helper functions
+source $TACKLEBOX/rig.fish          # Config Rig
+source $TACKLEBOX/copilot.fish      # GitHub Copilot
+source $TACKLEBOX/pacman.fish       # Pacman
+source $TACKLEBOX/starship.fish     # Starship
 
-# Helper functions
-source $TACKLEBOX/helpers.fish
-
-# Config rig functions
-source $TACKLEBOX/rig.fish
-
-# GitHub Copilot
-source $TACKLEBOX/copilot.fish
-
-# pacman
-source $TACKLEBOX/pacman.fish
-
-# Starship
-source $TACKLEBOX/starship.fish
+rig-status --quiet
