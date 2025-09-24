@@ -24,3 +24,9 @@ rig config --global core.autocrlf false
 rig config --global push.autoSetupRemote true
 rig config --global status.showUntrackedFiles no
 rig config --global init.defaultBranch main
+
+# Configure rig repository for proper remote branch tracking
+Write-Host "Configuring rig repository for remote branch tracking..." -ForegroundColor Gray
+rig config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+rig fetch origin
+Write-Host "✅ Rig repository configured successfully" -ForegroundColor Green
