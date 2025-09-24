@@ -64,3 +64,48 @@ function rig-ignore {
     rig commit -m "Updated .gitignore"
     rig-push
 }
+
+function rig-status {
+    # Check status of the rig repository and provide suggestions
+    
+    # Fetch latest changes from remote to compare
+    rig fetch origin $RIG_BRANCH 2>$null
+    
+    # Check for local changes
+    $localStatus = rig status --porcelain
+    $hasLocalChanges = $localStatus.Length -gt 0
+    
+    # Check for upstream changes using git status with branch info
+    $branchStatus = rig status -b --porcelain=v1 2>$null
+    $hasUpstreamChanges = $false
+    
+    if ($branchStatus) {
+        # Look for branch status line that indicates we're behind
+        $branchLine = ($branchStatus | Where-Object { $_ -match "^##" }) -join ""
+        if ($branchLine -match "\[behind \d+\]") {
+            $hasUpstreamChanges = $true
+        }
+    }
+    
+    if ($hasLocalChanges -and $hasUpstreamChanges) {
+        Write-Host "⚠️  WARNING: Both local and upstream changes detected!" -ForegroundColor Yellow
+        Write-Host "Local changes:" -ForegroundColor Cyan
+        rig status --short
+        Write-Host "`nThis may cause a merge conflict. Suggested steps:" -ForegroundColor Yellow
+        Write-Host "1. Commit your local changes: rig-up <files>" -ForegroundColor White
+        Write-Host "2. Pull and merge upstream changes: rig-down" -ForegroundColor White
+        Write-Host "3. Resolve any conflicts manually if they occur" -ForegroundColor White
+    }
+    elseif ($hasLocalChanges) {
+        Write-Host "📝 Local changes detected:" -ForegroundColor Cyan
+        rig status --short
+        Write-Host "`nSuggestion: Run 'rig-up <files>' to commit and sync your changes" -ForegroundColor Green
+    }
+    elseif ($hasUpstreamChanges) {
+        Write-Host "⬇️  Upstream changes available" -ForegroundColor Cyan
+        Write-Host "Suggestion: Run 'rig-down' to pull the latest changes" -ForegroundColor Green
+    }
+    else {
+        Write-Host "✅ Repository is up to date - no local or upstream changes" -ForegroundColor Green
+    }
+}
