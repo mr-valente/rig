@@ -1,3 +1,4 @@
+# filepath: c:\Users\nick.valente\.config\powershell\powertools\rig.ps1
 $RIG_HOME = "$HOME\.rig"
 $RIG_BRANCH = "windows"
 
@@ -18,24 +19,26 @@ function rig-pull {
 
 function rig-up {
     # Add files to the rig repository
-	foreach ($arg in $args) {
-    	rig add $HOME\$arg
-		echo "Added $arg"
-	}
-	$commitMessage = "Modified " + ($args -join ", ")
-	rig commit -m $commitMessage
-	rig-push
+    foreach ($arg in $args) {
+        rig add $HOME\$arg
+        echo "Added $arg"
+    }
+    $commitMessage = "Modified " + ($args -join ", ")
+    rig commit -m $commitMessage
+    rig-push
 }
 
 function rig-down {
     # Pull changes from the rig repository
-	rig reset --hard HEAD
-	rig-pull
+    rig reset --hard HEAD
+    # Use proper fetch to update remote branch reference
+    rig fetch origin "${RIG_BRANCH}:refs/remotes/origin/${RIG_BRANCH}"
+    rig merge "origin/$RIG_BRANCH"
 }
 
 function rig-reset {
     # Resets the current branch to the state of the latest commit, discarding any changes made after that commit.
-	rig reset --hard HEAD
+    rig reset --hard HEAD
 }
 
 function rig-list {
@@ -68,35 +71,30 @@ function rig-ignore {
 function rig-status {
     # Check status of the rig repository and provide suggestions
     
-    # Fetch latest changes from remote to compare
+    Write-Host "Checking rig repository status..." -ForegroundColor Gray
+    
+    # Fetch with proper remote branch reference
     Write-Host "Fetching from remote..." -ForegroundColor Gray
-    rig fetch origin $RIG_BRANCH 2>$null
+    rig fetch origin "${RIG_BRANCH}:refs/remotes/origin/${RIG_BRANCH}" 2>$null
     
     # Check for local changes
     $localStatus = rig status --porcelain
-    $hasLocalChanges = $localStatus.Length -gt 0
+    $hasLocalChanges = ($localStatus -and $localStatus.Length -gt 0)
     Write-Host "Local changes detected: $hasLocalChanges" -ForegroundColor Gray
     
-    # Check for upstream changes using git status with branch info
-    $branchStatus = rig status -b --porcelain=v1 2>$null
-    Write-Host "Branch status output:" -ForegroundColor Gray
-    $branchStatus | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
+    # Get current local commit hash
+    $localCommit = rig rev-parse HEAD 2>$null
+    Write-Host "Local commit: $localCommit" -ForegroundColor Gray
     
-    $hasUpstreamChanges = $false
+    # Get remote commit hash
+    $remoteCommit = rig rev-parse "origin/$RIG_BRANCH" 2>$null
+    Write-Host "Remote commit: $remoteCommit" -ForegroundColor Gray
     
-    if ($branchStatus) {
-        # Look for branch status line that indicates we're behind
-        $branchLine = ($branchStatus | Where-Object { $_ -match "^##" }) -join ""
-        Write-Host "Branch line: '$branchLine'" -ForegroundColor Gray
-        if ($branchLine -match "\[behind \d+\]") {
-            $hasUpstreamChanges = $true
-        }
-    }
-    
+    $hasUpstreamChanges = ($localCommit -and $remoteCommit -and $localCommit -ne $remoteCommit)
     Write-Host "Upstream changes detected: $hasUpstreamChanges" -ForegroundColor Gray
     
     if ($hasLocalChanges -and $hasUpstreamChanges) {
-        Write-Host "⚠️  WARNING: Both local and upstream changes detected!" -ForegroundColor Yellow
+        Write-Host "`n⚠️  WARNING: Both local and upstream changes detected!" -ForegroundColor Yellow
         Write-Host "Local changes:" -ForegroundColor Cyan
         rig status --short
         Write-Host "`nThis may cause a merge conflict. Suggested steps:" -ForegroundColor Yellow
@@ -105,15 +103,15 @@ function rig-status {
         Write-Host "3. Resolve any conflicts manually if they occur" -ForegroundColor White
     }
     elseif ($hasLocalChanges) {
-        Write-Host "📝 Local changes detected:" -ForegroundColor Cyan
+        Write-Host "`n📝 Local changes detected:" -ForegroundColor Cyan
         rig status --short
         Write-Host "`nSuggestion: Run 'rig-up <files>' to commit and sync your changes" -ForegroundColor Green
     }
     elseif ($hasUpstreamChanges) {
-        Write-Host "⬇️  Upstream changes available" -ForegroundColor Cyan
+        Write-Host "`n⬇️  Upstream changes available" -ForegroundColor Cyan
         Write-Host "Suggestion: Run 'rig-down' to pull the latest changes" -ForegroundColor Green
     }
     else {
-        Write-Host "✅ Repository is up to date - no local or upstream changes" -ForegroundColor Green
+        Write-Host "`n✅ Repository is up to date - no local or upstream changes" -ForegroundColor Green
     }
 }
