@@ -8,8 +8,8 @@
 
 Remove `--force` option if you don't want to overwrite duplicates:
 
-    ```fish
-    git clone --bare https://github.com/mr-valente/rig.git "$HOME/.rig"
-    git --git-dir="$HOME/.rig" --work-tree=$HOME checkout arch --force
-    source $HOME/.config/fish/setup.fish
-    ```
+```fish
+git clone --bare https://github.com/mr-valente/rig.git "$HOME/.rig"
+git --git-dir="$HOME/.rig" --work-tree=$HOME checkout arch --force
+source $HOME/.config/fish/setup.fish
+```
