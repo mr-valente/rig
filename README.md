@@ -1,26 +1,15 @@
-# My Window's Config Rig
-Under construction 🚧 
+# My Config Rig
 
-Test edit 3.
+**OS**: Windows
 
-## Installing the repository
+**Shell**: PowerShell 7
 
-1. Clone and checkout repo (remove `--force` option if you don't want to overwrite duplicates)
+## Initializing the Repository
 
-    ```
-    git clone --bare https://github.com/mr-valente/rig.git "$HOME/.rig"
-    git --git-dir="$HOME/.rig" --work-tree=$HOME checkout --force
-    ```
+Remove `--force` option if you don't want to overwrite duplicates:
 
-2. Initialize:
-
-    * `pwsh`: 
-        ```
-        . "$HOME\.config\powershell\setup.ps1"
-        ```
-
-    * `fish`: 
-        ```
-        source "$HOME/.config/fish/setup.fish"
-        ```
-  
+```pwsh
+git clone --bare https://github.com/mr-valente/rig.git "$HOME/.rig"
+git --git-dir="$HOME/.rig" --work-tree=$HOME checkout windows --force
+. "$HOME\.config\powershell\setup.ps1"
+```
