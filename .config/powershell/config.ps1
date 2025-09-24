@@ -18,25 +18,15 @@ $MUSIC = "$HOME\Music"
 $PICTURES = "$HOME\Pictures"
 $VIDEOS = "$HOME\Videos"
 
-$POWERTOOLS = "$env:XDG_CONFIG_HOME\powershell\powertools"
+$POWERTOOLS = "$env:XDG_CONFIG_HOME\powershell\powertools"	
+. "$POWERTOOLS\helpers.ps1"	    # Helper functions
+. "$POWERTOOLS\rig.ps1"         # Config Rig
+. "$POWERTOOLS\starship.ps1"    # Starship
+. "$POWERTOOLS\copilot.ps1"     # GitHub Copilot
+. "$POWERTOOLS\helix.ps1"       # Helix
+. "$POWERTOOLS\ghostscript.ps1" # Ghostscript
+. "$POWERTOOLS\bitwarden.ps1"   # Bitwarden
+. "$POWERTOOLS\tailscale.ps1"   # Tailscale
 
-# Helper functions
-. "$POWERTOOLS\helpers.ps1"
-
-# Config Rig
-. "$POWERTOOLS\rig.ps1"
-
-# Starship
-. "$POWERTOOLS\starship.ps1"
-
-# Github Copilot
-. "$POWERTOOLS\copilot.ps1"
-
-# Helix
-. "$POWERTOOLS\helix.ps1"
-
-# Ghostscript
-. "$POWERTOOLS\ghostscript.ps1"
-
-# Bitwarden
-. "$POWERTOOLS\bitwarden.ps1"
+# Check rig status
+rig-status -Quiet

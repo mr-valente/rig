@@ -16,7 +16,8 @@ if ((Get-Content $PROFILE) -notcontains $launchcode) {
     $launchcode | Out-File -Append -FilePath $PROFILE
 }
 
-# Restart the shell
+# Restart the shell and load new profile
+# (Make sure to call this before using rig functions below)
 . $PROFILE
 
 # Set up .gitconfig

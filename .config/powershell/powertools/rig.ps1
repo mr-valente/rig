@@ -1,27 +1,36 @@
-# filepath: c:\Users\nick.valente\.config\powershell\powertools\rig.ps1
+# Rig - A dotfiles management system using Git bare repository
+# Configuration variables
 $RIG_HOME = "$HOME\.rig"
 $RIG_BRANCH = "windows"
 
 function rig { 
-    # Run git command in rig mode
+    # Execute git commands with rig repository configuration
+    # Uses bare repository structure with work-tree set to $HOME
     git --git-dir=$RIG_HOME --work-tree=$HOME $args 
 }
 
 function rig-push {
-    # Push changes to the rig repository
+    # Push local commits to remote repository
     rig push origin $RIG_BRANCH
 }
 
 function rig-pull {
-    # Pull changes from the rig repository
+    # Pull changes from remote repository
     rig pull origin $RIG_BRANCH
 }
 
 function rig-up {
-    # Add files to the rig repository
+    # Stage, commit, and push specified files to the rig repository
+    # Arguments: file paths relative to $HOME
+    # Example: rig-up .bashrc .vimrc
+    if ($args.Count -eq 0) {
+        Write-Error "Error: No files specified"
+        return 1
+    }
+    
     foreach ($arg in $args) {
-        rig add $HOME\$arg
-        echo "Added $arg"
+        rig add "$HOME\$arg"
+        Write-Host "Added $arg"
     }
     $commitMessage = "Modified " + ($args -join ", ")
     rig commit -m $commitMessage
@@ -29,28 +38,37 @@ function rig-up {
 }
 
 function rig-down {
-    # Pull changes from the rig repository
+    # Synchronize local repository with remote changes
+    # Performs hard reset, fetch, and merge to ensure clean state
     rig reset --hard HEAD
-    # Use proper fetch to update remote branch reference
+    # Use explicit refspec to update remote branch reference
     rig fetch origin "${RIG_BRANCH}:refs/remotes/origin/${RIG_BRANCH}"
     rig merge "origin/$RIG_BRANCH"
 }
 
 function rig-reset {
-    # Resets the current branch to the state of the latest commit, discarding any changes made after that commit.
+    # Reset repository to latest commit, discarding all local changes
+    # WARNING: This will permanently discard uncommitted changes
     rig reset --hard HEAD
 }
 
 function rig-list {
-    # List all files in the rig repository
+    # List all tracked files in the rig repository
     rig ls-tree -r HEAD --name-only
 }
 
 function rig-remove {
-    # Remove files from the rig repository
+    # Remove files from rig repository tracking and push changes
+    # Arguments: file paths relative to $HOME
+    # Note: Files remain in filesystem but are no longer tracked
+    if ($args.Count -eq 0) {
+        Write-Error "Error: No files specified"
+        return 1
+    }
+    
     foreach ($arg in $args) {
-        rig rm -r --cached $HOME\$arg
-        echo "Removed $arg"
+        rig rm -r --cached "$HOME\$arg"
+        Write-Host "Removed $arg"
     }
     $commitMessage = "Removed " + ($args -join ", ")
     rig commit -m $commitMessage
@@ -58,56 +76,68 @@ function rig-remove {
 }
 
 function rig-ignore {
-    # Add files to the .gitignore file
-    foreach ($arg in $args) {
-        echo $arg | Out-File -Append -Encoding utf8 $HOME\.gitignore
-        echo "Ignored $arg"
+    # Add patterns to .gitignore and commit the changes
+    # Arguments: file patterns or paths to ignore
+    # Example: rig-ignore "*.log" "temp/"
+    if ($args.Count -eq 0) {
+        Write-Error "Error: No files specified"
+        return 1
     }
-    rig add $HOME\.gitignore
+    
+    foreach ($arg in $args) {
+        Add-Content -Path "$HOME\.gitignore" -Value $arg -Encoding UTF8
+        Write-Host "Ignored $arg"
+    }
+    rig add "$HOME\.gitignore"
     rig commit -m "Updated .gitignore"
     rig-push
 }
 
 function rig-status {
+    # Analyze repository status and provide actionable recommendations
+    # Options:
+    #   -Quiet: Show minimal output for scripting
+    # Checks for both local uncommitted changes and upstream updates
     param(
         [switch]$Quiet
     )
-    # Check status of the rig repository and provide suggestions
     
+    # Display progress information in verbose mode
     if (-not $Quiet) {
-        Write-Host "Checking rig repository status..." -ForegroundColor Gray
+        Write-Host "Checking rig repository status..." -ForegroundColor DarkGray
     }
     
-    # Fetch with proper remote branch reference
+    # Fetch latest remote changes with explicit refspec
     if (-not $Quiet) {
-        Write-Host "Fetching from remote..." -ForegroundColor Gray
+        Write-Host "Fetching from remote..." -ForegroundColor DarkGray
     }
     rig fetch origin "${RIG_BRANCH}:refs/remotes/origin/${RIG_BRANCH}" 2>$null
     
-    # Check for local changes
-    $localStatus = rig status --porcelain
+    # Detect local uncommitted changes
+    $localStatus = rig status --porcelain 2>$null
     $hasLocalChanges = ($localStatus -and $localStatus.Length -gt 0)
     if (-not $Quiet) {
-        Write-Host "Local changes detected: $hasLocalChanges" -ForegroundColor Gray
+        Write-Host "Local changes detected: $hasLocalChanges" -ForegroundColor DarkGray
     }
     
-    # Get current local commit hash
+    # Get commit hashes for comparison
     $localCommit = rig rev-parse HEAD 2>$null
     if (-not $Quiet) {
-        Write-Host "Local commit: $localCommit" -ForegroundColor Gray
+        Write-Host "Local commit: $localCommit" -ForegroundColor DarkGray
     }
     
-    # Get remote commit hash
     $remoteCommit = rig rev-parse "origin/$RIG_BRANCH" 2>$null
     if (-not $Quiet) {
-        Write-Host "Remote commit: $remoteCommit" -ForegroundColor Gray
+        Write-Host "Remote commit: $remoteCommit" -ForegroundColor DarkGray
     }
     
+    # Determine if remote has newer commits
     $hasUpstreamChanges = ($localCommit -and $remoteCommit -and $localCommit -ne $remoteCommit)
     if (-not $Quiet) {
-        Write-Host "Upstream changes detected: $hasUpstreamChanges" -ForegroundColor Gray
+        Write-Host "Upstream changes detected: $hasUpstreamChanges" -ForegroundColor DarkGray
     }
     
+    # Provide status summary and recommendations
     if ($hasLocalChanges -and $hasUpstreamChanges) {
         if ($Quiet) {
             Write-Host "rig: local and upstream changes detected" -ForegroundColor Yellow
@@ -142,6 +172,6 @@ function rig-status {
         if (-not $Quiet) {
             Write-Host "`n✅ Repository is up to date - no local or upstream changes" -ForegroundColor Green
         }
-        # In quiet mode, show nothing when everything is up to date
+        # Silent success in quiet mode when everything is synchronized
     }
 }
