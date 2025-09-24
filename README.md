@@ -10,7 +10,11 @@ A simple yet powerful dotfiles management system using Git bare repositories. Ri
 - **Bare repository structure** keeps your home directory clean
 - **Status monitoring** with conflict detection and recommendations
 
-## Commands
+## Usage
+
+Navigate to an OS-specific branch for rig files and initialization instructions. 
+
+### Commands
 
 | Command | Description |
 |---------|-------------|
@@ -25,7 +29,7 @@ A simple yet powerful dotfiles management system using Git bare repositories. Ri
 | `rig-ignore <patterns...>` | Add patterns to .gitignore |
 | `rig-reset` | Reset to latest commit (discards local changes) |
 
-## Usage Examples
+### Usage Examples
 
 ```powershell
 # Track new configuration files
