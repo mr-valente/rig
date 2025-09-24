@@ -1,6 +1,7 @@
-# Nick's Config Rig
+# My Config Rig
 
 **OS**: Arch Linux 
+
 **Shell**: Fish
 
 ## Initializing the Repository
