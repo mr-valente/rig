@@ -1,7 +1,7 @@
 # My Window's Config Rig
 Under construction 🚧 
 
-Test edit.
+Test edit 2.
 
 ## Installing the repository
 
