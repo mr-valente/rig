@@ -69,49 +69,79 @@ function rig-ignore {
 }
 
 function rig-status {
+    param(
+        [switch]$Quiet
+    )
     # Check status of the rig repository and provide suggestions
     
-    Write-Host "Checking rig repository status..." -ForegroundColor Gray
+    if (-not $Quiet) {
+        Write-Host "Checking rig repository status..." -ForegroundColor Gray
+    }
     
     # Fetch with proper remote branch reference
-    Write-Host "Fetching from remote..." -ForegroundColor Gray
+    if (-not $Quiet) {
+        Write-Host "Fetching from remote..." -ForegroundColor Gray
+    }
     rig fetch origin "${RIG_BRANCH}:refs/remotes/origin/${RIG_BRANCH}" 2>$null
     
     # Check for local changes
     $localStatus = rig status --porcelain
     $hasLocalChanges = ($localStatus -and $localStatus.Length -gt 0)
-    Write-Host "Local changes detected: $hasLocalChanges" -ForegroundColor Gray
+    if (-not $Quiet) {
+        Write-Host "Local changes detected: $hasLocalChanges" -ForegroundColor Gray
+    }
     
     # Get current local commit hash
     $localCommit = rig rev-parse HEAD 2>$null
-    Write-Host "Local commit: $localCommit" -ForegroundColor Gray
+    if (-not $Quiet) {
+        Write-Host "Local commit: $localCommit" -ForegroundColor Gray
+    }
     
     # Get remote commit hash
     $remoteCommit = rig rev-parse "origin/$RIG_BRANCH" 2>$null
-    Write-Host "Remote commit: $remoteCommit" -ForegroundColor Gray
+    if (-not $Quiet) {
+        Write-Host "Remote commit: $remoteCommit" -ForegroundColor Gray
+    }
     
     $hasUpstreamChanges = ($localCommit -and $remoteCommit -and $localCommit -ne $remoteCommit)
-    Write-Host "Upstream changes detected: $hasUpstreamChanges" -ForegroundColor Gray
+    if (-not $Quiet) {
+        Write-Host "Upstream changes detected: $hasUpstreamChanges" -ForegroundColor Gray
+    }
     
     if ($hasLocalChanges -and $hasUpstreamChanges) {
-        Write-Host "`n⚠️  WARNING: Both local and upstream changes detected!" -ForegroundColor Yellow
-        Write-Host "Local changes:" -ForegroundColor Cyan
-        rig status --short
-        Write-Host "`nThis may cause a merge conflict. Suggested steps:" -ForegroundColor Yellow
-        Write-Host "1. Commit your local changes: rig-up <files>" -ForegroundColor White
-        Write-Host "2. Pull and merge upstream changes: rig-down" -ForegroundColor White
-        Write-Host "3. Resolve any conflicts manually if they occur" -ForegroundColor White
+        if ($Quiet) {
+            Write-Host "rig: local and upstream changes detected" -ForegroundColor Yellow
+        } else {
+            Write-Host "`n⚠️  WARNING: Both local and upstream changes detected!" -ForegroundColor Yellow
+            Write-Host "Local changes:" -ForegroundColor Cyan
+            rig status --short
+            Write-Host "`nThis may cause a merge conflict. Suggested steps:" -ForegroundColor Yellow
+            Write-Host "1. Commit your local changes: rig-up <files>" -ForegroundColor White
+            Write-Host "2. Pull and merge upstream changes: rig-down" -ForegroundColor White
+            Write-Host "3. Resolve any conflicts manually if they occur" -ForegroundColor White
+        }
     }
     elseif ($hasLocalChanges) {
-        Write-Host "`n📝 Local changes detected:" -ForegroundColor Cyan
-        rig status --short
-        Write-Host "`nSuggestion: Run 'rig-up <files>' to commit and sync your changes" -ForegroundColor Green
+        if ($Quiet) {
+            Write-Host "rig: local changes pending" -ForegroundColor Cyan
+        } else {
+            Write-Host "`n📝 Local changes detected:" -ForegroundColor Cyan
+            rig status --short
+            Write-Host "`nSuggestion: Run 'rig-up <files>' to commit and sync your changes" -ForegroundColor Green
+        }
     }
     elseif ($hasUpstreamChanges) {
-        Write-Host "`n⬇️  Upstream changes available" -ForegroundColor Cyan
-        Write-Host "Suggestion: Run 'rig-down' to pull the latest changes" -ForegroundColor Green
+        if ($Quiet) {
+            Write-Host "rig: upstream changes available" -ForegroundColor Cyan
+        } else {
+            Write-Host "`n⬇️  Upstream changes available" -ForegroundColor Cyan
+            Write-Host "Suggestion: Run 'rig-down' to pull the latest changes" -ForegroundColor Green
+        }
     }
     else {
-        Write-Host "`n✅ Repository is up to date - no local or upstream changes" -ForegroundColor Green
+        if (-not $Quiet) {
+            Write-Host "`n✅ Repository is up to date - no local or upstream changes" -ForegroundColor Green
+        }
+        # In quiet mode, show nothing when everything is up to date
     }
 }
