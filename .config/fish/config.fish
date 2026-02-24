@@ -5,12 +5,11 @@
 ################################################################################  
 
 # Greeting
-# fish_logo cyan blue green ω Ω
 set -g fish_greeting "
  ╦ ╦┌─┐┬  ┌─┐┌─┐┌┬┐┌─┐  ┌┬┐┌─┐  ╔═╗┌─┐┌─┐┌─┐┌─┐┌─┐┬ ┬┬┌─┐  ╔═╗┌─┐┬─┐┌┬┐┬ ┬
  ║║║├┤ │  │  │ ││││├┤    │ │ │  ╚═╗├─┘├─┤│  ├┤ └─┐├─┤│├─┘  ║╣ ├─┤├┬┘ │ ├─┤
  ╚╩╝└─┘┴─┘└─┘└─┘┴ ┴└─┘   ┴ └─┘  ╚═╝┴  ┴ ┴└─┘└─┘└─┘┴ ┴┴┴    ╚═╝┴ ┴┴└─ ┴ ┴ ┴"
-
+# fish_logo cyan blue green ω Ω
 set -l TACKLEBOX $XDG_CONFIG_HOME/fish/tacklebox
 for f in $TACKLEBOX/*.fish
     source $f

@@ -61,3 +61,5 @@ function zazen --description "Daily system update: paru + daemon-reload + restar
     echo "Zendo is at peace. ✓"
     set_color normal
 end
+
+
