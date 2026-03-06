@@ -19,25 +19,25 @@ end
 rig-status --quiet
 
 ###############################################################################
-# (temporary) Function to check Arch LTS kernel version
+# (temporary) Function to check Arch mainline kernel version
 
-function check_lts --description "Check if Arch LTS kernel is 6.18+"
+function check_mainline --description "Check if Arch mainline kernel is 7.0+"
     # Fetch the version
-    set -l current_lts (curl -s "https://archlinux.org/packages/search/json/?name=linux-lts" | jq -r ".results[0].pkgver")
+    set -l current_mainline (curl -s "https://archlinux.org/packages/search/json/?name=linux" | jq -r ".results[0].pkgver")
     
-    # Check if version is 6.18 or higher
+    # Check if version is 7.0 or higher
     # Regex explanation:
-    # ^6\.       = Starts with "6."
-    # 1[8-9]     = Matches 18 or 19
-    # |          = OR
-    # [2-9][0-9] = Matches 20 through 99
-    if string match -qr "^6\.(1[8-9]|[2-9][0-9])" -- $current_lts
+    # ^           = Start of string
+    # ([7-9]|     = Major versions 7, 8, 9
+    # [1-9][0-9]) = Major versions 10+
+    # \.          = Literal dot before minor version
+    if string match -qr "^([7-9]|[1-9][0-9])\." -- $current_mainline
         set_color -o green
         echo ""
-        echo "🚨 ALERT: Linux LTS has updated to $current_lts!"
+        echo "🚨 ALERT: Linux mainline has updated to $current_mainline!"
         echo ""
         set_color normal
     end
 end
 
-check_lts
+check_mainline
