@@ -40,4 +40,4 @@ function check_mainline --description "Check if Arch mainline kernel is 7.0+"
     end
 end
 
-check_mainline
+# check_mainline
