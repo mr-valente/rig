@@ -80,21 +80,13 @@ format = '[ $symbol ($version) ]($style)'
 symbol = ""
 style = "yellow bg:61"
 format = '[ $symbol ($version) ]($style)'
-pyenv_version_name = true
+python_binary = [['uv', 'run', 'python']]
 
 [rlang]
 symbol = ""
 style = "yellow bg:61"
 detect_files = ['.Rprofile']
 format = '[ $symbol ($version) ]($style)'
-
-# Poetry shell deprecated (for now)
-# [env_var]
-# variable = 'VIRTUAL_ENV'
-# style = "yellow bg:61"
-# symbol = "󰇺"
-# format = '[ $symbol venv]($style)'
-
 
 [time]
 disabled = false
