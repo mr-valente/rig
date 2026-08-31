@@ -28,34 +28,34 @@ The command resolves two locations independently:
   `builds.yaml` happens to live.
 
 Either can be overridden for a single invocation. Use `--src-dir DIRECTORY`
-(or `-d DIRECTORY`) to resolve project directories beneath another tree, and
+(or `-S DIRECTORY`) to resolve project directories beneath another tree, and
 `--config FILE` (or `-c FILE`) to read a different configuration file:
 
 ```fish
 build --src-dir /mnt/projects/src --list
-build -d /mnt/projects/src --rebuild steamboat
+build -S /mnt/projects/src --rebuild steamboat
 build --config /path/to/builds.yaml --list
-build -c /path/to/builds.yaml -d /mnt/projects/src --rebuild steamboat
+build -c /path/to/builds.yaml -S /mnt/projects/src --rebuild steamboat
 ```
 
 The same two locations can be set through the environment:
 
 ```fish
-env BUILD_CONFIG=/path/to/builds.yaml build --list
-env BUILD_SRC_DIR=/mnt/projects/src build --list
+env BUILDER_CONFIG=/path/to/builds.yaml build --list
+env BUILDER_SRC_DIR=/mnt/projects/src build --list
 ```
 
 The configuration file lookup order is:
 
 1. `--config FILE`.
-2. `BUILD_CONFIG`, when it is set and nonempty.
+2. `BUILDER_CONFIG`, when it is set and nonempty.
 3. `$XDG_CONFIG_HOME/builder/builds.yaml`, falling back to
    `$HOME/.config/builder/builds.yaml` when `XDG_CONFIG_HOME` is unset.
 
 The source root lookup order is:
 
 1. `--src-dir DIRECTORY`.
-2. `BUILD_SRC_DIR`, when it is set and nonempty.
+2. `BUILDER_SRC_DIR`, when it is set and nonempty.
 3. `$HOME/src`.
 
 Flags take precedence over the environment. An override applies only to that
