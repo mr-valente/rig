@@ -6,11 +6,13 @@ set -U PROFILE $XDG_CONFIG_HOME/fish/config.fish
 
 source $PROFILE
 
-# Set up .gitconfig
+# Set up global .gitconfig
 rig config --global core.autocrlf false
 rig config --global push.autoSetupRemote true
-rig config --global status.showUntrackedFiles no
 rig config --global init.defaultBranch main
+
+# Set up local .gitconfig
+rig config --local status.showUntrackedFiles no
 
 # Configure rig repository for proper remote branch tracking
 echo "Configuring rig repository for remote branch tracking..."
