@@ -20,11 +20,13 @@ if ((Get-Content $PROFILE) -notcontains $launchcode) {
 # (Make sure to call this before using rig functions below)
 . $PROFILE
 
-# Set up .gitconfig
+# Set up global .gitconfig
 rig config --global core.autocrlf false
 rig config --global push.autoSetupRemote true
-rig config --global status.showUntrackedFiles no
 rig config --global init.defaultBranch main
+
+# Set up local .gitconfig
+rig config --local status.showUntrackedFiles no
 
 # Configure rig repository for proper remote branch tracking
 Write-Host "Configuring rig repository for remote branch tracking..." -ForegroundColor Gray
