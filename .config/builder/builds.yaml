@@ -1,0 +1,198 @@
+# Declarative configuration for build.fish. Paths are relative to this file.
+# This intentionally uses a small YAML subset: two-space indentation, mappings,
+# and unquoted scalar values. Space-separated tag templates replace YAML lists.
+
+schema: 2
+
+settings:
+  sudo: false
+
+resolvers:
+  semver:
+    type: semver
+
+  github-tag:
+    type: github-latest-release
+    prefix: ensure-v
+
+  github-version:
+    type: github-latest-release
+    prefix: strip-v
+
+recipes:
+  docker-release:
+    builder: docker
+    push: true
+
+  compose-release:
+    builder: compose
+    push: true
+
+projects:
+  actual-clerk:
+    description: Actual Budget document sidecar image
+    directory: actual-clerk
+    recipe: docker-release
+    image: valentemath/actual-clerk
+    primary_component: app
+    components:
+      app:
+        resolver: semver
+        current_version: v0.2.10
+        default_bump: patch
+        build_arg: ACTUAL_CLERK_VERSION
+        build_transform: strip-v
+    outputs:
+      default:
+        source_tag: latest
+        tags: latest {app}
+
+  grimmory-clerk:
+    description: Grimmory library sidecar image
+    directory: grimmory-clerk
+    recipe: docker-release
+    image: valentemath/grimmory-clerk
+    primary_component: app
+    components:
+      app:
+        resolver: semver
+        current_version: v0.7.5
+        default_bump: patch
+        build_arg: GRIMMORY_CLERK_VERSION
+        build_transform: strip-v
+    outputs:
+      default:
+        source_tag: latest
+        tags: latest {app}
+
+  lemonade-stand:
+    description: Custom Lemonade image pinned to an upstream release
+    directory: lemonade-stand
+    recipe: compose-release
+    image: valentemath/lemonade-stand
+    primary_component: lemonade
+    tag_modifier: true
+    tag_modifier_env: TAG_MOD
+    components:
+      lemonade:
+        resolver: github-version
+        repository: lemonade-sdk/lemonade
+        build_arg: LEMONADE_VERSION
+        build_transform: keep
+    outputs:
+      default:
+        source_tag: latest{tag_suffix}
+        tags: latest{tag_suffix} {lemonade}{tag_suffix}
+
+  openrgb-server:
+    description: OpenRGB compose image
+    directory: openrgb-server
+    recipe: compose-release
+    image: valentemath/openrgb-server
+    outputs:
+      default:
+        source_tag: latest
+        tags: latest
+
+  paperless-clerk:
+    description: Paperless OCR sidecar image
+    directory: paperless-clerk
+    recipe: docker-release
+    image: valentemath/paperless-clerk
+    primary_component: app
+    components:
+      app:
+        resolver: semver
+        current_version: v0.1.9
+        default_bump: patch
+        build_arg: PAPERLESS_CLERK_VERSION
+        build_transform: strip-v
+    outputs:
+      default:
+        source_tag: latest
+        tags: latest {app}
+
+  steamboat:
+    description: Sunshine image pinned to Sunshine and USBoss releases
+    directory: steamboat
+    recipe: compose-release
+    image: valentemath/steamboat
+    primary_component: sunshine
+    components:
+      sunshine:
+        resolver: github-tag
+        repository: LizardByte/Sunshine
+        build_arg: SUNSHINE_TAG
+        build_transform: keep
+        override_env: SUNSHINE_TAG
+      usboss:
+        resolver: github-tag
+        repository: mr-valente/usboss
+        build_arg: USBOSS_TAG
+        build_transform: keep
+        override_env: USBOSS_TAG
+    outputs:
+      default:
+        source_tag: latest
+        tags: latest {sunshine}
+
+  storj-reporter:
+    description: Storj billing reporter image
+    directory: storj-report
+    recipe: docker-release
+    image: valentemath/storj-reporter
+    primary_component: app
+    components:
+      app:
+        resolver: semver
+        current_version: v0.1.1
+        default_bump: patch
+        build_arg: STORJ_REPORTER_VERSION
+        build_transform: strip-v
+    outputs:
+      default:
+        source_tag: latest
+        tags: latest {app}
+
+  tailgate:
+    description: Tailscale image with standard and Sablier image lines
+    directory: tailgate
+    recipe: compose-release
+    image: valentemath/tailgate
+    primary_component: tailscale
+    components:
+      tailscale:
+        resolver: github-version
+        repository: tailscale/tailscale
+        build_arg: TAILSCALE_VERSION
+        build_transform: keep
+      sablier:
+        resolver: github-version
+        repository: sablierapp/sablier
+        build_arg: SABLIER_VERSION
+        build_transform: keep
+    outputs:
+      standard:
+        source_tag: latest
+        tags: latest {tailscale}
+      sablier:
+        source_tag: latest-with-sablier
+        tags: latest-with-sablier {tailscale}-with-sablier
+
+  tend:
+    description: Tend habit tracker
+    directory: tend
+    recipe: docker-release
+    image: valentemath/tend
+    primary_component: app
+    components:
+      app:
+        resolver: semver
+        current_version: v0.2.2
+        default_bump: patch
+        build_arg: TEND_VERSION
+        build_transform: strip-v
+    outputs:
+      default:
+        source_tag: latest
+        tags: latest {app}
