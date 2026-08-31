@@ -10,7 +10,7 @@ set -g fish_greeting "
  ║║║├┤ │  │  │ ││││├┤    │ │ │  ╚═╗├─┘├─┤│  ├┤ └─┐├─┤│├─┘  ║╣ ├─┤├┬┘ │ ├─┤
  ╚╩╝└─┘┴─┘└─┘└─┘┴ ┴└─┘   ┴ └─┘  ╚═╝┴  ┴ ┴└─┘└─┘└─┘┴ ┴┴┴    ╚═╝┴ ┴┴└─ ┴ ┴ ┴"
 # fish_logo cyan blue green ω Ω
-set -l TACKLEBOX $XDG_CONFIG_HOME/fish/tacklebox
+set -l TACKLEBOX $__fish_config_dir/tacklebox
 for f in $TACKLEBOX/*.fish
     source $f
 end
