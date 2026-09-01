@@ -1,14 +1,14 @@
 # Sourced automatically from config.fish along with the rest of tacklebox.
 #
 # Reads its configuration from $XDG_CONFIG_HOME/builder/builds.yaml and builds
-# the projects checked out under $HOME/src.  Both locations can be overridden
-# -- see $BUILDER_CONFIG / --config and $BUILDER_SRC_DIR / --src-dir below.
+# the projects checked out under $HOME/forge.  Both locations can be overridden
+# -- see $BUILDER_CONFIG / --config and $BUILDER_FORGE_DIR / --forge-dir below.
 
-function __src_build_error
+function __forge_build_error
     printf 'build: %s\n' "$argv" >&2
 end
 
-function __src_build_config_file --argument-names config_override
+function __forge_build_config_file --argument-names config_override
     if test -n "$config_override"
         builtin path resolve "$config_override" 2>/dev/null
     else if set -q BUILDER_CONFIG; and test -n "$BUILDER_CONFIG"
@@ -23,17 +23,17 @@ end
 # The source root is resolved independently of the configuration file: project
 # directories are relative to the checkout tree, not to wherever builds.yaml
 # happens to live.
-function __src_build_src_dir --argument-names src_override
-    if test -n "$src_override"
-        builtin path resolve "$src_override" 2>/dev/null
-    else if set -q BUILDER_SRC_DIR; and test -n "$BUILDER_SRC_DIR"
-        builtin path resolve "$BUILDER_SRC_DIR" 2>/dev/null
+function __forge_build_forge_dir --argument-names forge_override
+    if test -n "$forge_override"
+        builtin path resolve "$forge_override" 2>/dev/null
+    else if set -q BUILDER_FORGE_DIR; and test -n "$BUILDER_FORGE_DIR"
+        builtin path resolve "$BUILDER_FORGE_DIR" 2>/dev/null
     else
-        builtin path resolve "$HOME/src" 2>/dev/null
+        builtin path resolve "$HOME/forge" 2>/dev/null
     end
 end
 
-function __src_build_yaml_lint --argument-names config_file
+function __forge_build_yaml_lint --argument-names config_file
     command awk '
         function trim(value) {
             sub(/^[[:space:]]+/, "", value)
@@ -122,7 +122,7 @@ function __src_build_yaml_lint --argument-names config_file
     ' "$config_file"
 end
 
-function __src_build_yaml_query --argument-names config_file mode wanted_path
+function __forge_build_yaml_query --argument-names config_file mode wanted_path
     command awk -v mode="$mode" -v wanted="$wanted_path" '
         function trim(value) {
             sub(/^[[:space:]]+/, "", value)
@@ -167,15 +167,15 @@ function __src_build_yaml_query --argument-names config_file mode wanted_path
     ' "$config_file"
 end
 
-function __src_build_config_get --argument-names config_file path
-    __src_build_yaml_query "$config_file" value "$path"
+function __forge_build_config_get --argument-names config_file path
+    __forge_build_yaml_query "$config_file" value "$path"
 end
 
-function __src_build_config_children --argument-names config_file path
-    __src_build_yaml_query "$config_file" children "$path"
+function __forge_build_config_children --argument-names config_file path
+    __forge_build_yaml_query "$config_file" children "$path"
 end
 
-function __src_build_validate_template --argument-names project template tag_modifier
+function __forge_build_validate_template --argument-names project template tag_modifier
     set -l components $argv[4..-1]
     set -l placeholders (string match -ra '\{[a-z][a-z0-9_]*\}' -- "$template")
 
@@ -183,287 +183,287 @@ function __src_build_validate_template --argument-names project template tag_mod
         set -l name (string replace -a '{' '' -- (string replace -a '}' '' -- "$placeholder"))
         if test "$name" = tag_suffix
             if test "$tag_modifier" != true
-                __src_build_error "project '$project' uses {tag_suffix} but tag_modifier is not enabled"
+                __forge_build_error "project '$project' uses {tag_suffix} but tag_modifier is not enabled"
                 return 1
             end
         else if not contains -- "$name" $components
-            __src_build_error "project '$project' uses unknown template component '{$name}'"
+            __forge_build_error "project '$project' uses unknown template component '{$name}'"
             return 1
         end
     end
 
     set -l without_placeholders (string replace -ra '\{[a-z][a-z0-9_]*\}' X -- "$template")
     if not string match -qr '^[A-Za-z0-9_][A-Za-z0-9_.-]*$' -- "$without_placeholders"
-        __src_build_error "project '$project' has an invalid tag template: $template"
+        __forge_build_error "project '$project' has an invalid tag template: $template"
         return 1
     end
 end
 
-function __src_build_validate_config --argument-names config_file src_dir
-    if test -z "$src_dir"; or not test -d "$src_dir"
-        __src_build_error "source directory not found: $src_dir"
+function __forge_build_validate_config --argument-names config_file forge_dir
+    if test -z "$forge_dir"; or not test -d "$forge_dir"
+        __forge_build_error "source directory not found: $forge_dir"
         return 1
     end
     if test -z "$config_file"; or not test -f "$config_file"
-        __src_build_error "configuration file not found: $config_file"
+        __forge_build_error "configuration file not found: $config_file"
         return 1
     end
     if not test -r "$config_file"
-        __src_build_error "configuration file is not readable: $config_file"
+        __forge_build_error "configuration file is not readable: $config_file"
         return 1
     end
 
-    __src_build_yaml_lint "$config_file"
+    __forge_build_yaml_lint "$config_file"
     or begin
-        __src_build_error "invalid YAML structure in $config_file"
+        __forge_build_error "invalid YAML structure in $config_file"
         return 1
     end
 
-    if test (__src_build_config_get "$config_file" schema) != 2
-        __src_build_error "unsupported or missing schema in $config_file (expected schema: 2)"
+    if test (__forge_build_config_get "$config_file" schema) != 2
+        __forge_build_error "unsupported or missing schema in $config_file (expected schema: 2)"
         return 1
     end
 
-    set -l top_level (__src_build_config_children "$config_file" '')
+    set -l top_level (__forge_build_config_children "$config_file" '')
     for field in $top_level
         if not contains -- "$field" schema settings resolvers recipes projects
-            __src_build_error "unknown top-level field '$field'"
+            __forge_build_error "unknown top-level field '$field'"
             return 1
         end
     end
 
-    set -l use_sudo (__src_build_config_get "$config_file" settings.sudo)
+    set -l use_sudo (__forge_build_config_get "$config_file" settings.sudo)
     if not contains -- "$use_sudo" true false
-        __src_build_error 'settings.sudo must be true or false'
+        __forge_build_error 'settings.sudo must be true or false'
         return 1
     end
-    for field in (__src_build_config_children "$config_file" settings)
+    for field in (__forge_build_config_children "$config_file" settings)
         if not contains -- "$field" sudo
-            __src_build_error "unknown settings field '$field'"
+            __forge_build_error "unknown settings field '$field'"
             return 1
         end
     end
 
-    set -l resolvers (__src_build_config_children "$config_file" resolvers)
+    set -l resolvers (__forge_build_config_children "$config_file" resolvers)
     if test (count $resolvers) -eq 0
-        __src_build_error 'at least one resolver must be configured'
+        __forge_build_error 'at least one resolver must be configured'
         return 1
     end
     for resolver in $resolvers
         set -l path "resolvers.$resolver"
-        set -l resolver_type (__src_build_config_get "$config_file" "$path.type")
-        for field in (__src_build_config_children "$config_file" "$path")
+        set -l resolver_type (__forge_build_config_get "$config_file" "$path.type")
+        for field in (__forge_build_config_children "$config_file" "$path")
             if not contains -- "$field" type prefix
-                __src_build_error "unknown field '$field' for resolver '$resolver'"
+                __forge_build_error "unknown field '$field' for resolver '$resolver'"
                 return 1
             end
         end
         if not contains -- "$resolver_type" semver github-latest-release
-            __src_build_error "resolver '$resolver' has invalid type '$resolver_type'"
+            __forge_build_error "resolver '$resolver' has invalid type '$resolver_type'"
             return 1
         end
-        set -l prefix (__src_build_config_get "$config_file" "$path.prefix")
+        set -l prefix (__forge_build_config_get "$config_file" "$path.prefix")
         if test "$resolver_type" = github-latest-release
             if not contains -- "$prefix" keep strip-v ensure-v
-                __src_build_error "resolver '$resolver' needs prefix keep, strip-v, or ensure-v"
+                __forge_build_error "resolver '$resolver' needs prefix keep, strip-v, or ensure-v"
                 return 1
             end
         else if test -n "$prefix"
-            __src_build_error "semver resolver '$resolver' must not define prefix"
+            __forge_build_error "semver resolver '$resolver' must not define prefix"
             return 1
         end
     end
 
-    set -l recipes (__src_build_config_children "$config_file" recipes)
+    set -l recipes (__forge_build_config_children "$config_file" recipes)
     if test (count $recipes) -eq 0
-        __src_build_error 'at least one recipe must be configured'
+        __forge_build_error 'at least one recipe must be configured'
         return 1
     end
     for recipe in $recipes
         set -l path "recipes.$recipe"
-        for field in (__src_build_config_children "$config_file" "$path")
+        for field in (__forge_build_config_children "$config_file" "$path")
             if not contains -- "$field" builder push
-                __src_build_error "unknown field '$field' for recipe '$recipe'"
+                __forge_build_error "unknown field '$field' for recipe '$recipe'"
                 return 1
             end
         end
-        set -l builder (__src_build_config_get "$config_file" "$path.builder")
-        set -l push (__src_build_config_get "$config_file" "$path.push")
+        set -l builder (__forge_build_config_get "$config_file" "$path.builder")
+        set -l push (__forge_build_config_get "$config_file" "$path.push")
         if not contains -- "$builder" docker compose
-            __src_build_error "recipe '$recipe' has invalid builder '$builder'"
+            __forge_build_error "recipe '$recipe' has invalid builder '$builder'"
             return 1
         end
         if not contains -- "$push" true false
-            __src_build_error "recipe '$recipe' must set push to true or false"
+            __forge_build_error "recipe '$recipe' must set push to true or false"
             return 1
         end
     end
 
-    set -l projects (__src_build_config_children "$config_file" projects)
+    set -l projects (__forge_build_config_children "$config_file" projects)
     if test (count $projects) -eq 0
-        __src_build_error 'at least one project must be configured'
+        __forge_build_error 'at least one project must be configured'
         return 1
     end
     for project in $projects
         set -l path "projects.$project"
-        for field in (__src_build_config_children "$config_file" "$path")
+        for field in (__forge_build_config_children "$config_file" "$path")
             if not contains -- "$field" description directory recipe image primary_component tag_modifier tag_modifier_env components outputs
-                __src_build_error "unknown field '$field' for project '$project'"
+                __forge_build_error "unknown field '$field' for project '$project'"
                 return 1
             end
         end
 
-        set -l directory (__src_build_config_get "$config_file" "$path.directory")
-        set -l recipe (__src_build_config_get "$config_file" "$path.recipe")
-        set -l image (__src_build_config_get "$config_file" "$path.image")
+        set -l directory (__forge_build_config_get "$config_file" "$path.directory")
+        set -l recipe (__forge_build_config_get "$config_file" "$path.recipe")
+        set -l image (__forge_build_config_get "$config_file" "$path.image")
         if test -z "$directory" -o -z "$recipe" -o -z "$image"
-            __src_build_error "project '$project' must define directory, recipe, and image"
+            __forge_build_error "project '$project' must define directory, recipe, and image"
             return 1
         end
         if not string match -qr '^[A-Za-z0-9][A-Za-z0-9_.-]*(/[A-Za-z0-9][A-Za-z0-9_.-]*)*$' -- "$directory"
-            __src_build_error "project '$project' has invalid relative directory '$directory'"
+            __forge_build_error "project '$project' has invalid relative directory '$directory'"
             return 1
         end
-        if not test -d (builtin path normalize "$src_dir/$directory")
-            __src_build_error "project '$project' directory does not exist: $src_dir/$directory"
+        if not test -d (builtin path normalize "$forge_dir/$directory")
+            __forge_build_error "project '$project' directory does not exist: $forge_dir/$directory"
             return 1
         end
         if not contains -- "$recipe" $recipes
-            __src_build_error "project '$project' references unknown recipe '$recipe'"
+            __forge_build_error "project '$project' references unknown recipe '$recipe'"
             return 1
         end
         if not string match -qr '^[a-z0-9][a-z0-9._/-]*$' -- "$image"
-            __src_build_error "project '$project' has invalid image name '$image'"
+            __forge_build_error "project '$project' has invalid image name '$image'"
             return 1
         end
 
-        set -l tag_modifier (__src_build_config_get "$config_file" "$path.tag_modifier")
+        set -l tag_modifier (__forge_build_config_get "$config_file" "$path.tag_modifier")
         if test -z "$tag_modifier"
             set tag_modifier false
         end
         if not contains -- "$tag_modifier" true false
-            __src_build_error "project '$project' tag_modifier must be true or false"
+            __forge_build_error "project '$project' tag_modifier must be true or false"
             return 1
         end
-        set -l tag_modifier_env (__src_build_config_get "$config_file" "$path.tag_modifier_env")
+        set -l tag_modifier_env (__forge_build_config_get "$config_file" "$path.tag_modifier_env")
         if test "$tag_modifier" = true
             if not string match -qr '^[A-Z_][A-Z0-9_]*$' -- "$tag_modifier_env"
-                __src_build_error "project '$project' must define a valid tag_modifier_env"
+                __forge_build_error "project '$project' must define a valid tag_modifier_env"
                 return 1
             end
         else if test -n "$tag_modifier_env"
-            __src_build_error "project '$project' defines tag_modifier_env without enabling tag_modifier"
+            __forge_build_error "project '$project' defines tag_modifier_env without enabling tag_modifier"
             return 1
         end
 
-        set -l components (__src_build_config_children "$config_file" "$path.components")
-        set -l primary (__src_build_config_get "$config_file" "$path.primary_component")
+        set -l components (__forge_build_config_children "$config_file" "$path.components")
+        set -l primary (__forge_build_config_get "$config_file" "$path.primary_component")
         if test (count $components) -gt 0
             if not contains -- "$primary" $components
-                __src_build_error "project '$project' must select a configured primary_component"
+                __forge_build_error "project '$project' must select a configured primary_component"
                 return 1
             end
         else if test -n "$primary"
-            __src_build_error "project '$project' has primary_component but no components"
+            __forge_build_error "project '$project' has primary_component but no components"
             return 1
         end
 
         set -l semver_components
         for component in $components
             if not string match -qr '^[a-z][a-z0-9_]*$' -- "$component"
-                __src_build_error "project '$project' has invalid component name '$component'"
+                __forge_build_error "project '$project' has invalid component name '$component'"
                 return 1
             end
             set -l component_path "$path.components.$component"
-            for field in (__src_build_config_children "$config_file" "$component_path")
+            for field in (__forge_build_config_children "$config_file" "$component_path")
                 if not contains -- "$field" resolver repository current_version default_bump build_arg build_transform override_env
-                    __src_build_error "unknown field '$field' for component '$project.$component'"
+                    __forge_build_error "unknown field '$field' for component '$project.$component'"
                     return 1
                 end
             end
 
-            set -l resolver (__src_build_config_get "$config_file" "$component_path.resolver")
-            set -l build_arg (__src_build_config_get "$config_file" "$component_path.build_arg")
-            set -l transform (__src_build_config_get "$config_file" "$component_path.build_transform")
+            set -l resolver (__forge_build_config_get "$config_file" "$component_path.resolver")
+            set -l build_arg (__forge_build_config_get "$config_file" "$component_path.build_arg")
+            set -l transform (__forge_build_config_get "$config_file" "$component_path.build_transform")
             if not contains -- "$resolver" $resolvers
-                __src_build_error "component '$project.$component' references unknown resolver '$resolver'"
+                __forge_build_error "component '$project.$component' references unknown resolver '$resolver'"
                 return 1
             end
             if not string match -qr '^[A-Z_][A-Z0-9_]*$' -- "$build_arg"
-                __src_build_error "component '$project.$component' needs a valid build_arg"
+                __forge_build_error "component '$project.$component' needs a valid build_arg"
                 return 1
             end
             if not contains -- "$transform" keep strip-v ensure-v
-                __src_build_error "component '$project.$component' needs build_transform keep, strip-v, or ensure-v"
+                __forge_build_error "component '$project.$component' needs build_transform keep, strip-v, or ensure-v"
                 return 1
             end
-            set -l override_env (__src_build_config_get "$config_file" "$component_path.override_env")
+            set -l override_env (__forge_build_config_get "$config_file" "$component_path.override_env")
             if test -n "$override_env"; and not string match -qr '^[A-Z_][A-Z0-9_]*$' -- "$override_env"
-                __src_build_error "component '$project.$component' has invalid override_env '$override_env'"
+                __forge_build_error "component '$project.$component' has invalid override_env '$override_env'"
                 return 1
             end
 
-            set -l resolver_type (__src_build_config_get "$config_file" "resolvers.$resolver.type")
+            set -l resolver_type (__forge_build_config_get "$config_file" "resolvers.$resolver.type")
             if test "$resolver_type" = semver
                 set -a semver_components "$component"
-                set -l current (__src_build_config_get "$config_file" "$component_path.current_version")
-                set -l default_bump (__src_build_config_get "$config_file" "$component_path.default_bump")
+                set -l current (__forge_build_config_get "$config_file" "$component_path.current_version")
+                set -l default_bump (__forge_build_config_get "$config_file" "$component_path.default_bump")
                 if not string match -qr '^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' -- "$current"
-                    __src_build_error "component '$project.$component' has invalid current_version '$current'"
+                    __forge_build_error "component '$project.$component' has invalid current_version '$current'"
                     return 1
                 end
                 if not contains -- "$default_bump" major minor patch
-                    __src_build_error "component '$project.$component' needs default_bump major, minor, or patch"
+                    __forge_build_error "component '$project.$component' needs default_bump major, minor, or patch"
                     return 1
                 end
             else
-                set -l repository (__src_build_config_get "$config_file" "$component_path.repository")
+                set -l repository (__forge_build_config_get "$config_file" "$component_path.repository")
                 if not string match -qr '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$' -- "$repository"
-                    __src_build_error "component '$project.$component' has invalid GitHub repository '$repository'"
+                    __forge_build_error "component '$project.$component' has invalid GitHub repository '$repository'"
                     return 1
                 end
             end
         end
 
         if test (count $semver_components) -gt 1
-            __src_build_error "project '$project' has more than one semver component"
+            __forge_build_error "project '$project' has more than one semver component"
             return 1
         end
         if test (count $semver_components) -eq 1; and test "$primary" != "$semver_components[1]"
-            __src_build_error "project '$project' semver component must be primary_component"
+            __forge_build_error "project '$project' semver component must be primary_component"
             return 1
         end
 
-        set -l outputs (__src_build_config_children "$config_file" "$path.outputs")
+        set -l outputs (__forge_build_config_children "$config_file" "$path.outputs")
         if test (count $outputs) -eq 0
-            __src_build_error "project '$project' must define at least one output"
+            __forge_build_error "project '$project' must define at least one output"
             return 1
         end
-        set -l builder (__src_build_config_get "$config_file" "recipes.$recipe.builder")
+        set -l builder (__forge_build_config_get "$config_file" "recipes.$recipe.builder")
         if test "$builder" = docker; and test (count $outputs) -ne 1
-            __src_build_error "docker project '$project' must define exactly one output"
+            __forge_build_error "docker project '$project' must define exactly one output"
             return 1
         end
 
         for output in $outputs
             set -l output_path "$path.outputs.$output"
-            for field in (__src_build_config_children "$config_file" "$output_path")
+            for field in (__forge_build_config_children "$config_file" "$output_path")
                 if not contains -- "$field" source_tag tags
-                    __src_build_error "unknown field '$field' for output '$project.$output'"
+                    __forge_build_error "unknown field '$field' for output '$project.$output'"
                     return 1
                 end
             end
-            set -l source_tag (__src_build_config_get "$config_file" "$output_path.source_tag")
-            set -l tags (__src_build_config_get "$config_file" "$output_path.tags")
+            set -l source_tag (__forge_build_config_get "$config_file" "$output_path.source_tag")
+            set -l tags (__forge_build_config_get "$config_file" "$output_path.tags")
             if test -z "$source_tag" -o -z "$tags"
-                __src_build_error "output '$project.$output' must define source_tag and tags"
+                __forge_build_error "output '$project.$output' must define source_tag and tags"
                 return 1
             end
-            __src_build_validate_template "$project" "$source_tag" "$tag_modifier" $components
+            __forge_build_validate_template "$project" "$source_tag" "$tag_modifier" $components
             or return 1
             for tag in (string split ' ' -- "$tags")
                 if test -n "$tag"
-                    __src_build_validate_template "$project" "$tag" "$tag_modifier" $components
+                    __forge_build_validate_template "$project" "$tag" "$tag_modifier" $components
                     or return 1
                 end
             end
@@ -471,7 +471,7 @@ function __src_build_validate_config --argument-names config_file src_dir
     end
 end
 
-function __src_build_apply_prefix --argument-names value prefix
+function __forge_build_apply_prefix --argument-names value prefix
     switch "$prefix"
         case keep
             printf '%s\n' "$value"
@@ -486,28 +486,28 @@ function __src_build_apply_prefix --argument-names value prefix
     end
 end
 
-function __src_build_resolve_github --argument-names repository component
+function __forge_build_resolve_github --argument-names repository component
     if not command -q curl
-        __src_build_error "curl is required to resolve GitHub component '$component'"
+        __forge_build_error "curl is required to resolve GitHub component '$component'"
         return 1
     end
 
     set -l release_url "https://github.com/$repository/releases/latest"
     set -l resolved_url (command curl -fsSLI -o /dev/null -w '%{url_effective}' "$release_url")
     or begin
-        __src_build_error "failed to resolve latest '$component' release from $release_url"
+        __forge_build_error "failed to resolve latest '$component' release from $release_url"
         return 1
     end
 
     set -l tag (string replace -r '^.*/' '' -- "$resolved_url")
     if test -z "$tag"; or test "$tag" = latest
-        __src_build_error "failed to parse latest '$component' release tag from $resolved_url"
+        __forge_build_error "failed to parse latest '$component' release tag from $resolved_url"
         return 1
     end
     printf '%s\n' "$tag"
 end
 
-function __src_build_semver_increment --argument-names input_version bump
+function __forge_build_semver_increment --argument-names input_version bump
     set -l prefix
     if string match -q 'v*' -- "$input_version"
         set prefix v
@@ -530,7 +530,7 @@ function __src_build_semver_increment --argument-names input_version bump
     printf '%s%s.%s.%s\n' "$prefix" "$major" "$minor" "$patch"
 end
 
-function __src_build_semver_normalize --argument-names input_version reference_version
+function __forge_build_semver_normalize --argument-names input_version reference_version
     set -l prefix
     if string match -q 'v*' -- "$reference_version"
         set prefix v
@@ -538,7 +538,7 @@ function __src_build_semver_normalize --argument-names input_version reference_v
     printf '%s%s\n' "$prefix" (string replace -r '^v' '' -- "$input_version")
 end
 
-function __src_build_semver_compare --argument-names left right
+function __forge_build_semver_compare --argument-names left right
     set -l left_parts (string split . -- (string replace -r '^v' '' -- "$left"))
     set -l right_parts (string split . -- (string replace -r '^v' '' -- "$right"))
     for index in 1 2 3
@@ -553,20 +553,20 @@ function __src_build_semver_compare --argument-names left right
     printf '0\n'
 end
 
-function __src_build_expand_template --argument-names template tag_suffix
+function __forge_build_expand_template --argument-names template tag_suffix
     set -l result (string replace -a -- '{tag_suffix}' "$tag_suffix" "$template")
     for pair in $argv[3..-1]
         set -l parts (string split -m 1 '=' -- "$pair")
         set result (string replace -a -- "{$parts[1]}" "$parts[2]" "$result")
     end
     if string match -qr '\{[^}]+\}' -- "$result"
-        __src_build_error "unresolved tag template: $result"
+        __forge_build_error "unresolved tag template: $result"
         return 1
     end
     printf '%s\n' "$result"
 end
 
-function __src_build_print_command
+function __forge_build_print_command
     set -l escaped
     for argument in $argv
         set -a escaped (string escape -- "$argument")
@@ -574,18 +574,18 @@ function __src_build_print_command
     string join ' ' -- $escaped
 end
 
-function __src_build_save_version --argument-names config_file project component expected_version new_version
+function __forge_build_save_version --argument-names config_file project component expected_version new_version
     set -l version_path "projects.$project.components.$component.current_version"
-    set -l observed_version (__src_build_config_get "$config_file" "$version_path")
+    set -l observed_version (__forge_build_config_get "$config_file" "$version_path")
     if test "$observed_version" != "$expected_version"
-        __src_build_error "not updating $config_file: '$project.$component' changed from $expected_version to $observed_version during the build"
+        __forge_build_error "not updating $config_file: '$project.$component' changed from $expected_version to $observed_version during the build"
         return 1
     end
 
     set -l config_dir (builtin path dirname "$config_file")
     set -l temp_file (command mktemp "$config_dir/.builds.yaml.XXXXXX")
     if test $status -ne 0 -o -z "$temp_file"
-        __src_build_error "could not create a temporary configuration file in $config_dir"
+        __forge_build_error "could not create a temporary configuration file in $config_dir"
         return 1
     end
 
@@ -618,7 +618,7 @@ function __src_build_save_version --argument-names config_file project component
     set -l awk_status $status
     if test $awk_status -ne 0
         command rm -f -- "$temp_file"
-        __src_build_error "could not update current_version for '$project.$component'"
+        __forge_build_error "could not update current_version for '$project.$component'"
         return 1
     end
 
@@ -626,33 +626,33 @@ function __src_build_save_version --argument-names config_file project component
     and command mv -- "$temp_file" "$config_file"
     or begin
         command rm -f -- "$temp_file"
-        __src_build_error "could not atomically replace $config_file"
+        __forge_build_error "could not atomically replace $config_file"
         return 1
     end
 end
 
-function __src_build_usage
+function __forge_build_usage
     printf '%s\n' \
         'Usage: build [OPTIONS] PROJECT [COMPONENT OVERRIDES]' \
         '' \
         'Resolve versions, build, tag, and push a configured Docker project.' \
         '' \
         'Options:' \
-        '  -M, --major              Increment the configured major version' \
-        '  -m, --minor              Increment the configured minor version' \
-        '  -p, --patch              Increment the configured patch version' \
-        '  -v, --version X.Y.Z      Build an exact SemVer version' \
-        '  -r, --rebuild            Reuse SemVer state; resolved projects reuse latest when unchanged' \
-        '  -s, --set NAME=VERSION   Override a component; may be repeated' \
-        '  -t, --tag-mod NAME       Apply the configured image-tag modifier' \
-        '  -S, --src-dir DIRECTORY  Look for project directories under DIRECTORY' \
-        '                           instead of $HOME/src' \
-        '  -c, --config FILE        Read FILE instead of' \
-        '                           $XDG_CONFIG_HOME/builder/builds.yaml' \
-        '      --no-push            Build and tag locally without pushing or saving version state' \
-        '  -n, --dry-run            Resolve and print the plan without Docker changes' \
-        '  -l, --list               List configured projects' \
-        '  -h, --help               Show this help' \
+        '  -M, --major                Increment the configured major version' \
+        '  -m, --minor                Increment the configured minor version' \
+        '  -p, --patch                Increment the configured patch version' \
+        '  -v, --version X.Y.Z        Build an exact SemVer version' \
+        '  -r, --rebuild              Reuse SemVer state; resolved projects reuse latest when unchanged' \
+        '  -s, --set NAME=VERSION     Override a component; may be repeated' \
+        '  -t, --tag-mod NAME         Apply the configured image-tag modifier' \
+        '  -F, --forge-dir DIRECTORY  Look for project directories under DIRECTORY' \
+        '                             instead of $HOME/forge' \
+        '  -c, --config FILE          Read FILE instead of' \
+        '                             $XDG_CONFIG_HOME/builder/builds.yaml' \
+        '      --no-push              Build and tag locally without pushing or saving version state' \
+        '  -n, --dry-run              Resolve and print the plan without Docker changes' \
+        '  -l, --list                 List configured projects' \
+        '  -h, --help                 Show this help' \
         '' \
         'Component shorthand is also accepted, such as --sunshine VERSION.' \
         'SemVer projects use their configured default bump when omitted.' \
@@ -676,7 +676,7 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
         m/minor \
         p/patch \
         r/rebuild \
-        'S/src-dir=' \
+        'F/forge-dir=' \
         'c/config=' \
         'v/version=' \
         's/set=+' \
@@ -686,42 +686,42 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
     or return 2
 
     if set -q _flag_help
-        __src_build_usage
+        __forge_build_usage
         return 0
     end
 
-    set -l config_file (__src_build_config_file "$_flag_config")
-    set -l src_dir (__src_build_src_dir "$_flag_src_dir")
-    __src_build_validate_config "$config_file" "$src_dir"
+    set -l config_file (__forge_build_config_file "$_flag_config")
+    set -l forge_dir (__forge_build_forge_dir "$_flag_forge_dir")
+    __forge_build_validate_config "$config_file" "$forge_dir"
     or return 1
 
-    set -l projects (__src_build_config_children "$config_file" projects)
+    set -l projects (__forge_build_config_children "$config_file" projects)
     if set -q _flag_list
         if test (count $argv) -gt 0
-            __src_build_error '--list does not accept a project or overrides'
+            __forge_build_error '--list does not accept a project or overrides'
             return 2
         end
         printf 'Configured builds:\n'
         for configured_project in $projects
-            set -l description (__src_build_config_get "$config_file" "projects.$configured_project.description")
+            set -l description (__forge_build_config_get "$config_file" "projects.$configured_project.description")
             printf '  %-20s %s\n' "$configured_project" "$description"
         end
         return 0
     end
 
     if test (count $argv) -eq 0
-        __src_build_error 'a project name is required (use build --list)'
+        __forge_build_error 'a project name is required (use build --list)'
         return 2
     end
 
     set -l project "$argv[1]"
     if not contains -- "$project" $projects
-        __src_build_error "unknown project '$project' (use build --list)"
+        __forge_build_error "unknown project '$project' (use build --list)"
         return 2
     end
 
     set -l path "projects.$project"
-    set -l components (__src_build_config_children "$config_file" "$path.components")
+    set -l components (__forge_build_config_children "$config_file" "$path.components")
     set -l override_entries $_flag_set
     set -l shorthand $argv[2..-1]
     while test (count $shorthand) -gt 0
@@ -732,13 +732,13 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
         else if string match -qr '^--[a-z][a-z0-9_]*$' -- "$token"
             set -l name (string replace -r '^--' '' -- "$token")
             if test (count $shorthand) -eq 0; or string match -q -- '--*' "$shorthand[1]"
-                __src_build_error "component override '$token' needs a value"
+                __forge_build_error "component override '$token' needs a value"
                 return 2
             end
             set -a override_entries "$name=$shorthand[1]"
             set -e shorthand[1]
         else
-            __src_build_error "unexpected argument '$token'"
+            __forge_build_error "unexpected argument '$token'"
             return 2
         end
     end
@@ -747,16 +747,16 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
     set -l override_values
     for entry in $override_entries
         if not string match -qr '^[a-z][a-z0-9_]*=.+' -- "$entry"
-            __src_build_error "invalid component override '$entry' (expected NAME=VERSION)"
+            __forge_build_error "invalid component override '$entry' (expected NAME=VERSION)"
             return 2
         end
         set -l parts (string split -m 1 '=' -- "$entry")
         if not contains -- "$parts[1]" $components
-            __src_build_error "project '$project' has no component '$parts[1]'"
+            __forge_build_error "project '$project' has no component '$parts[1]'"
             return 2
         end
         if contains -- "$parts[1]" $override_names
-            __src_build_error "component '$parts[1]' was overridden more than once"
+            __forge_build_error "component '$parts[1]' was overridden more than once"
             return 2
         end
         set -a override_names "$parts[1]"
@@ -774,39 +774,39 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
         set version_selection_count (math "$version_selection_count + 1")
     end
     if test $version_selection_count -gt 1
-        __src_build_error '--major, --minor, --patch, --version, and --rebuild are mutually exclusive'
+        __forge_build_error '--major, --minor, --patch, --version, and --rebuild are mutually exclusive'
         return 2
     end
 
-    set -l primary (__src_build_config_get "$config_file" "$path.primary_component")
+    set -l primary (__forge_build_config_get "$config_file" "$path.primary_component")
     set -l semver_component
     for component in $components
-        set -l resolver (__src_build_config_get "$config_file" "$path.components.$component.resolver")
-        if test (__src_build_config_get "$config_file" "resolvers.$resolver.type") = semver
+        set -l resolver (__forge_build_config_get "$config_file" "$path.components.$component.resolver")
+        if test (__forge_build_config_get "$config_file" "resolvers.$resolver.type") = semver
             set semver_component "$component"
         end
     end
     if test $version_option_count -gt 0; and test -z "$semver_component"
-        __src_build_error "project '$project' uses resolved component versions; use --set NAME=VERSION"
+        __forge_build_error "project '$project' uses resolved component versions; use --set NAME=VERSION"
         return 2
     end
     if test -n "$semver_component"; and contains -- "$semver_component" $override_names
-        __src_build_error "use --version rather than --set for semver component '$semver_component'"
+        __forge_build_error "use --version rather than --set for semver component '$semver_component'"
         return 2
     end
 
-    set -l tag_modifier (__src_build_config_get "$config_file" "$path.tag_modifier")
+    set -l tag_modifier (__forge_build_config_get "$config_file" "$path.tag_modifier")
     if test -z "$tag_modifier"
         set tag_modifier false
     end
     set -l tag_suffix
     if set -q _flag_tag_mod
         if test "$tag_modifier" != true
-            __src_build_error "project '$project' does not support tag modifiers"
+            __forge_build_error "project '$project' does not support tag modifiers"
             return 2
         end
         if not string match -qr '^[A-Za-z0-9_][A-Za-z0-9_.-]*$' -- "$_flag_tag_mod"; or test (string length -- "$_flag_tag_mod") -gt 64
-            __src_build_error "invalid tag modifier '$_flag_tag_mod'"
+            __forge_build_error "invalid tag modifier '$_flag_tag_mod'"
             return 2
         end
         set tag_suffix "-$_flag_tag_mod"
@@ -822,32 +822,32 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
 
     for component in $components
         set -l component_path "$path.components.$component"
-        set -l resolver (__src_build_config_get "$config_file" "$component_path.resolver")
-        set -l resolver_type (__src_build_config_get "$config_file" "resolvers.$resolver.type")
+        set -l resolver (__forge_build_config_get "$config_file" "$component_path.resolver")
+        set -l resolver_type (__forge_build_config_get "$config_file" "resolvers.$resolver.type")
         set -l value
 
         if test "$resolver_type" = semver
-            set current_version (__src_build_config_get "$config_file" "$component_path.current_version")
+            set current_version (__forge_build_config_get "$config_file" "$component_path.current_version")
             if set -q _flag_rebuild
                 set value "$current_version"
             else if set -q _flag_version
                 if not string match -qr '^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' -- "$_flag_version"
-                    __src_build_error "invalid SemVer '$_flag_version' (expected vMAJOR.MINOR.PATCH)"
+                    __forge_build_error "invalid SemVer '$_flag_version' (expected vMAJOR.MINOR.PATCH)"
                     return 2
                 end
-                set value (__src_build_semver_normalize "$_flag_version" "$current_version")
-                set -l comparison (__src_build_semver_compare "$value" "$current_version")
+                set value (__forge_build_semver_normalize "$_flag_version" "$current_version")
+                set -l comparison (__forge_build_semver_compare "$value" "$current_version")
                 if test "$comparison" -gt 0
                     set should_save_version 1
                 else if test "$comparison" -lt 0
                     set version_warning 'this older version may repoint the image latest tag; version state will not move backward'
                 end
             else
-                set -l bump (__src_build_config_get "$config_file" "$component_path.default_bump")
+                set -l bump (__forge_build_config_get "$config_file" "$component_path.default_bump")
                 set -q _flag_major; and set bump major
                 set -q _flag_minor; and set bump minor
                 set -q _flag_patch; and set bump patch
-                set value (__src_build_semver_increment "$current_version" "$bump")
+                set value (__forge_build_semver_increment "$current_version" "$bump")
                 set should_save_version 1
             end
             set target_version "$value"
@@ -856,21 +856,21 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
             if test -n "$override_index"
                 set value "$override_values[$override_index]"
             else
-                set -l override_env (__src_build_config_get "$config_file" "$component_path.override_env")
+                set -l override_env (__forge_build_config_get "$config_file" "$component_path.override_env")
                 if test -n "$override_env"; and set -q $override_env; and test -n "$$override_env"
                     set value "$$override_env"
                 else
-                    set -l repository (__src_build_config_get "$config_file" "$component_path.repository")
-                    set value (__src_build_resolve_github "$repository" "$component")
+                    set -l repository (__forge_build_config_get "$config_file" "$component_path.repository")
+                    set value (__forge_build_resolve_github "$repository" "$component")
                     or return 1
                 end
             end
-            set -l prefix (__src_build_config_get "$config_file" "resolvers.$resolver.prefix")
-            set value (__src_build_apply_prefix "$value" "$prefix")
+            set -l prefix (__forge_build_config_get "$config_file" "resolvers.$resolver.prefix")
+            set value (__forge_build_apply_prefix "$value" "$prefix")
         end
 
         if test -z "$value"; or string match -qr '[[:space:]]' -- "$value"
-            __src_build_error "component '$component' resolved to an invalid empty or whitespace-containing value"
+            __forge_build_error "component '$component' resolved to an invalid empty or whitespace-containing value"
             return 1
         end
         set -a component_names "$component"
@@ -884,50 +884,50 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
         set -l component "$component_names[$index]"
         set -l value "$component_values[$index]"
         set -l component_path "$path.components.$component"
-        set -l build_arg (__src_build_config_get "$config_file" "$component_path.build_arg")
-        set -l transform (__src_build_config_get "$config_file" "$component_path.build_transform")
-        set -l build_value (__src_build_apply_prefix "$value" "$transform")
+        set -l build_arg (__forge_build_config_get "$config_file" "$component_path.build_arg")
+        set -l transform (__forge_build_config_get "$config_file" "$component_path.build_transform")
+        set -l build_value (__forge_build_apply_prefix "$value" "$transform")
         set -a build_options --build-arg "$build_arg=$build_value"
         set -a compose_environment "$build_arg=$build_value"
     end
     if set -q _flag_tag_mod
-        set -l tag_modifier_env (__src_build_config_get "$config_file" "$path.tag_modifier_env")
+        set -l tag_modifier_env (__forge_build_config_get "$config_file" "$path.tag_modifier_env")
         set -a compose_environment "$tag_modifier_env=$_flag_tag_mod"
     end
 
-    set -l image (__src_build_config_get "$config_file" "$path.image")
-    set -l output_names (__src_build_config_children "$config_file" "$path.outputs")
+    set -l image (__forge_build_config_get "$config_file" "$path.image")
+    set -l output_names (__forge_build_config_children "$config_file" "$path.outputs")
     set -l source_images
     set -l publish_images
     set -l publish_sources
     for output in $output_names
         set -l output_path "$path.outputs.$output"
-        set -l source_template (__src_build_config_get "$config_file" "$output_path.source_tag")
-        set -l source_tag (__src_build_expand_template "$source_template" "$tag_suffix" $component_pairs)
+        set -l source_template (__forge_build_config_get "$config_file" "$output_path.source_tag")
+        set -l source_tag (__forge_build_expand_template "$source_template" "$tag_suffix" $component_pairs)
         or return 1
         if not string match -qr '^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$' -- "$source_tag"
-            __src_build_error "output '$output' produced invalid Docker tag '$source_tag'"
+            __forge_build_error "output '$output' produced invalid Docker tag '$source_tag'"
             return 1
         end
         set -l source_image "$image:$source_tag"
         set -a source_images "$source_image"
 
-        set -l tag_templates (__src_build_config_get "$config_file" "$output_path.tags")
+        set -l tag_templates (__forge_build_config_get "$config_file" "$output_path.tags")
         for template in (string split ' ' -- "$tag_templates")
             if test -z "$template"
                 continue
             end
-            set -l tag (__src_build_expand_template "$template" "$tag_suffix" $component_pairs)
+            set -l tag (__forge_build_expand_template "$template" "$tag_suffix" $component_pairs)
             or return 1
             if not string match -qr '^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$' -- "$tag"
-                __src_build_error "output '$output' produced invalid Docker tag '$tag'"
+                __forge_build_error "output '$output' produced invalid Docker tag '$tag'"
                 return 1
             end
             set -l target_image "$image:$tag"
             set -l existing_index (contains -i -- "$target_image" $publish_images)
             if test -n "$existing_index"
                 if test "$publish_sources[$existing_index]" != "$source_image"
-                    __src_build_error "tag '$target_image' is produced by more than one source output"
+                    __forge_build_error "tag '$target_image' is produced by more than one source output"
                     return 1
                 end
             else
@@ -937,10 +937,10 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
         end
     end
 
-    set -l recipe (__src_build_config_get "$config_file" "$path.recipe")
-    set -l builder (__src_build_config_get "$config_file" "recipes.$recipe.builder")
-    set -l recipe_push (__src_build_config_get "$config_file" "recipes.$recipe.push")
-    set -l use_sudo (__src_build_config_get "$config_file" settings.sudo)
+    set -l recipe (__forge_build_config_get "$config_file" "$path.recipe")
+    set -l builder (__forge_build_config_get "$config_file" "recipes.$recipe.builder")
+    set -l recipe_push (__forge_build_config_get "$config_file" "recipes.$recipe.push")
+    set -l use_sudo (__forge_build_config_get "$config_file" settings.sudo)
     set -l command_prefix
     if test "$use_sudo" = true
         set command_prefix sudo
@@ -957,7 +957,7 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
     end
 
     printf 'Project:   %s\n' "$project"
-    printf 'Directory: %s\n' (builtin path normalize "$src_dir/"(__src_build_config_get "$config_file" "$path.directory"))
+    printf 'Directory: %s\n' (builtin path normalize "$forge_dir/"(__forge_build_config_get "$config_file" "$path.directory"))
     for index in (seq (count $component_names))
         printf 'Component: %-12s %s\n' "$component_names[$index]" "$component_values[$index]"
     end
@@ -970,7 +970,7 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
             printf 'Rebuild:   reused configured output tags\n'
         end
     end
-    printf 'Build:     %s\n' (__src_build_print_command $build_command)
+    printf 'Build:     %s\n' (__forge_build_print_command $build_command)
     for index in (seq (count $publish_images))
         if test "$publish_images[$index]" != "$publish_sources[$index]"
             printf 'Tag:       %s -> %s\n' "$publish_sources[$index]" "$publish_images[$index]"
@@ -1000,18 +1000,18 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
     end
 
     if not command -q docker
-        __src_build_error 'docker is required'
+        __forge_build_error 'docker is required'
         return 1
     end
     if test "$use_sudo" = true; and not command -q sudo
-        __src_build_error 'sudo is required by settings.sudo'
+        __forge_build_error 'sudo is required by settings.sudo'
         return 1
     end
 
-    set -l project_dir (builtin path normalize "$src_dir/"(__src_build_config_get "$config_file" "$path.directory"))
+    set -l project_dir (builtin path normalize "$forge_dir/"(__forge_build_config_get "$config_file" "$path.directory"))
     pushd "$project_dir" >/dev/null
     or begin
-        __src_build_error "could not enter project directory: $project_dir"
+        __forge_build_error "could not enter project directory: $project_dir"
         return 1
     end
 
@@ -1025,13 +1025,13 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
         set -l config_status $status
         if test $config_status -ne 0
             popd >/dev/null
-            __src_build_error "docker compose config failed with status $config_status"
+            __forge_build_error "docker compose config failed with status $config_status"
             return $config_status
         end
         for source_image in $source_images
             if not contains -- "$source_image" $compose_images
                 popd >/dev/null
-                __src_build_error "Compose does not produce configured source image '$source_image'"
+                __forge_build_error "Compose does not produce configured source image '$source_image'"
                 return 1
             end
         end
@@ -1041,7 +1041,7 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
     set -l build_status $status
     if test $build_status -ne 0
         popd >/dev/null
-        __src_build_error "'$project' build failed with status $build_status; version state was not changed"
+        __forge_build_error "'$project' build failed with status $build_status; version state was not changed"
         return $build_status
     end
 
@@ -1052,7 +1052,7 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
             set -l tag_status $status
             if test $tag_status -ne 0
                 popd >/dev/null
-                __src_build_error "tagging '$publish_images[$index]' failed with status $tag_status"
+                __forge_build_error "tagging '$publish_images[$index]' failed with status $tag_status"
                 return $tag_status
             end
         end
@@ -1065,7 +1065,7 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
             set -l push_status $status
             if test $push_status -ne 0
                 popd >/dev/null
-                __src_build_error "pushing '$target_image' failed with status $push_status; version state was not changed"
+                __forge_build_error "pushing '$target_image' failed with status $push_status; version state was not changed"
                 return $push_status
             end
         end
@@ -1073,7 +1073,7 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
     popd >/dev/null
 
     if test -n "$semver_component"; and test $should_save_version -eq 1; and not set -q _flag_no_push
-        __src_build_save_version "$config_file" "$project" "$semver_component" "$current_version" "$target_version"
+        __forge_build_save_version "$config_file" "$project" "$semver_component" "$current_version" "$target_version"
         or return 1
         printf 'Saved %s as the current version for %s.\n' "$target_version" "$project"
     end
@@ -1082,7 +1082,7 @@ end
 # Fish completion helpers.  These live beside the command because build.fish is
 # sourced directly from the user's Fish configuration rather than installed as
 # a command-specific completion file.
-function __src_build_completion_config_file
+function __forge_build_completion_config_file
     set -l tokens (commandline -opc)
     set -l config_override
     set -l index 2
@@ -1101,10 +1101,10 @@ function __src_build_completion_config_file
         set index (math "$index + 1")
     end
 
-    __src_build_config_file "$config_override" 2>/dev/null
+    __forge_build_config_file "$config_override" 2>/dev/null
 end
 
-function __src_build_completion_projects_condition
+function __forge_build_completion_projects_condition
     set -l current_token (commandline -ct)
     if string match -q -- '-*' "$current_token"
         return 1
@@ -1126,7 +1126,7 @@ function __src_build_completion_projects_condition
             switch "$token"
                 case --
                     set after_options 1
-                case --src-dir -S --config -c --version -v --set -s --tag-mod -t
+                case --forge-dir -F --config -c --version -v --set -s --tag-mod -t
                     set expecting_value 1
                 case '-*'
                     # Boolean options do not affect the positional slot.
@@ -1140,15 +1140,15 @@ function __src_build_completion_projects_condition
     test $expecting_value -eq 0; and test $positional_count -eq 0
 end
 
-function __src_build_completion_projects
-    set -l config_file (__src_build_completion_config_file)
+function __forge_build_completion_projects
+    set -l config_file (__forge_build_completion_config_file)
     if test -z "$config_file"; or not test -f "$config_file"
         return 0
     end
 
-    for project in (__src_build_config_children "$config_file" projects 2>/dev/null)
-        set -l description (__src_build_config_get "$config_file" "projects.$project.description" 2>/dev/null)
-        set -l directory (__src_build_config_get "$config_file" "projects.$project.directory" 2>/dev/null)
+    for project in (__forge_build_config_children "$config_file" projects 2>/dev/null)
+        set -l description (__forge_build_config_get "$config_file" "projects.$project.description" 2>/dev/null)
+        set -l directory (__forge_build_config_get "$config_file" "projects.$project.directory" 2>/dev/null)
         if test -n "$directory"; and test -n "$description"
             printf '%s\t%s (%s)\n' "$project" "$description" "$directory"
         else if test -n "$description"
@@ -1170,6 +1170,6 @@ complete -c build -l no-push -f -d 'Build locally without pushing or saving vers
 complete -c build -s v -l version -r -f -d 'Build an exact SemVer version'
 complete -c build -s s -l set -r -d 'Override a component version'
 complete -c build -s t -l tag-mod -r -f -d 'Apply the configured image-tag modifier'
-complete -c build -s S -l src-dir -r -a '(__fish_complete_directories)' -d 'Look for project directories under this directory'
+complete -c build -s F -l forge-dir -r -a '(__fish_complete_directories)' -d 'Look for project directories under this directory'
 complete -c build -s c -l config -r -F -d 'Read this builds.yaml instead of the configured one'
-complete -c build -n __src_build_completion_projects_condition -f -a '(__src_build_completion_projects)' -d 'Configured project'
+complete -c build -n __forge_build_completion_projects_condition -f -a '(__forge_build_completion_projects)' -d 'Configured project'
