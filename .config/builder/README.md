@@ -23,26 +23,26 @@ needed.
 The command resolves two locations independently:
 
 - The **configuration file**, `$XDG_CONFIG_HOME/builder/builds.yaml`.
-- The **source root**, `$HOME/src`, which is where project directories are
+- The **source root**, `$HOME/forge`, which is where project directories are
   resolved. Project paths are relative to this root, *not* to wherever
   `builds.yaml` happens to live.
 
-Either can be overridden for a single invocation. Use `--src-dir DIRECTORY`
-(or `-S DIRECTORY`) to resolve project directories beneath another tree, and
+Either can be overridden for a single invocation. Use `--forge-dir DIRECTORY`
+(or `-F DIRECTORY`) to resolve project directories beneath another tree, and
 `--config FILE` (or `-c FILE`) to read a different configuration file:
 
 ```fish
-build --src-dir /mnt/projects/src --list
-build -S /mnt/projects/src --rebuild steamboat
+build --forge-dir /mnt/projects/src --list
+build -F /mnt/projects/src --rebuild steamboat
 build --config /path/to/builds.yaml --list
-build -c /path/to/builds.yaml -S /mnt/projects/src --rebuild steamboat
+build -c /path/to/builds.yaml -F /mnt/projects/src --rebuild steamboat
 ```
 
 The same two locations can be set through the environment:
 
 ```fish
 env BUILDER_CONFIG=/path/to/builds.yaml build --list
-env BUILDER_SRC_DIR=/mnt/projects/src build --list
+env BUILDER_FORGE_DIR=/mnt/projects/src build --list
 ```
 
 The configuration file lookup order is:
@@ -54,9 +54,9 @@ The configuration file lookup order is:
 
 The source root lookup order is:
 
-1. `--src-dir DIRECTORY`.
-2. `BUILDER_SRC_DIR`, when it is set and nonempty.
-3. `$HOME/src`.
+1. `--forge-dir DIRECTORY`.
+2. `BUILDER_FORGE_DIR`, when it is set and nonempty.
+3. `$HOME/forge`.
 
 Flags take precedence over the environment. An override applies only to that
 invocation; it does not modify shell state.
@@ -75,7 +75,7 @@ Common commands:
 
 ```fish
 build --list
-build --src-dir /mnt/projects/src --list
+build --forge-dir /mnt/projects/src --list
 build --dry-run actual-clerk
 build actual-clerk
 build --minor paperless-clerk
@@ -303,7 +303,7 @@ projects:
 | Field | Required | Meaning |
 | --- | --- | --- |
 | `description` | No | Human-readable text displayed by `build --list` |
-| `directory` | Yes | Project path relative to the source root (`$HOME/src`) |
+| `directory` | Yes | Project path relative to the source root (`$HOME/forge`) |
 | `recipe` | Yes | Name of a configured recipe |
 | `image` | Yes | Repository name shared by all project outputs |
 | `primary_component` | When components exist | Component representing the image's release version |
