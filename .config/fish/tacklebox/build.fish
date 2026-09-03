@@ -498,11 +498,9 @@ function __forge_build_validate_config --argument-names config_file forge_dir
                 set -a version_keys "$project.$component"
                 set -l current (__forge_build_versions_get "$versions_file" "$project.$component")
                 set -l default_bump (__forge_build_config_get "$config_file" "$component_path.default_bump")
-                if test -z "$current"
-                    __forge_build_error "component '$project.$component' has no recorded version in $versions_file"
-                    return 1
-                end
-                if not string match -qr '^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' -- "$current"
+                # A component with no record is a project that has not been
+                # released yet; build asks for a starting version instead.
+                if test -n "$current"; and not string match -qr '^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' -- "$current"
                     __forge_build_error "component '$project.$component' has invalid version '$current' in $versions_file"
                     return 1
                 end
@@ -675,11 +673,43 @@ function __forge_build_print_command
     string join ' ' -- $escaped
 end
 
+function __forge_build_prompt_version --argument-names project component versions_file
+    set -l default_version v0.1.0
+    if not isatty stdin
+        __forge_build_error "component '$project.$component' has no recorded version in $versions_file; pass --version to set a starting version, or add a '$project.$component $default_version' record"
+        return 1
+    end
+
+    printf 'build: %s has no recorded version in %s.\n' "$project.$component" "$versions_file" >&2
+    printf 'build: treating %s as a fresh project.\n' "$project" >&2
+    while true
+        read --local --prompt-str "Starting version for $project.$component [$default_version]: " reply
+        or begin
+            printf '\n' >&2
+            __forge_build_error "no starting version given for '$project.$component'"
+            return 1
+        end
+        set reply (string trim -- "$reply")
+        if test -z "$reply"
+            set reply "$default_version"
+        end
+        if string match -qr '^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' -- "$reply"
+            printf '%s\n' "$reply"
+            return 0
+        end
+        __forge_build_error "'$reply' is not a SemVer version (expected vMAJOR.MINOR.PATCH)"
+    end
+end
+
 function __forge_build_save_version --argument-names versions_file project component expected_version new_version
     set -l key "$project.$component"
     set -l observed_version (__forge_build_versions_get "$versions_file" "$key")
     if test "$observed_version" != "$expected_version"
-        __forge_build_error "not updating $versions_file: '$key' changed from $expected_version to $observed_version during the build"
+        if test -z "$expected_version"
+            __forge_build_error "not updating $versions_file: '$key' was recorded as $observed_version during the build"
+        else
+            __forge_build_error "not updating $versions_file: '$key' changed from $expected_version to $observed_version during the build"
+        end
         return 1
     end
 
@@ -690,23 +720,52 @@ function __forge_build_save_version --argument-names versions_file project compo
         return 1
     end
 
-    # The record is rewritten in place, reusing its existing separator so that
-    # column-aligned files stay aligned.
-    command awk -v wanted="$key" -v replacement="$new_version" '
-        /^[[:space:]]*($|#)/ { print; next }
+    # An absent file is written from scratch, so a project's first release does
+    # not need the sidecar to exist beforehand.
+    set -l source_file "$versions_file"
+    if not test -f "$versions_file"
+        set source_file /dev/null
+        printf '%s\n' \
+            '# Managed SemVer state for build.fish, kept beside builds.yaml.' \
+            '# One record per line: PROJECT.COMPONENT VERSION' \
+            '' >"$temp_file"
+    end
 
-        NF == 2 && $1 == wanted {
-            separator = $0
+    # An existing record is rewritten in place, reusing its own separator so
+    # that column-aligned files stay aligned; a first version is appended,
+    # padded to the column the other records already use.
+    command awk -v wanted="$key" -v replacement="$new_version" '
+        function separator_of(line,    separator) {
+            separator = line
             sub(/^[^[:space:]]+/, "", separator)
             sub(/[^[:space:]]+[[:space:]]*$/, "", separator)
-            printf "%s%s%s\n", $1, separator, replacement
+            return separator
+        }
+
+        /^[[:space:]]*($|#)/ { print; next }
+
+        NF == 2 {
+            width = length($1) + length(separator_of($0))
+            if (width > column) { column = width }
+        }
+
+        NF == 2 && $1 == wanted {
+            printf "%s%s%s\n", $1, separator_of($0), replacement
             changed++
             next
         }
 
         { print }
-        END { if (changed != 1) exit 42 }
-    ' "$versions_file" >"$temp_file"
+
+        END {
+            if (changed > 1) { exit 42 }
+            if (changed == 1) { exit 0 }
+            if (column == 0) { column = length(wanted) + 2 }
+            padding = column - length(wanted)
+            if (padding < 1) { padding = 1 }
+            printf "%s%*s%s\n", wanted, padding, "", replacement
+        }
+    ' "$source_file" >>"$temp_file"
     set -l awk_status $status
     if test $awk_status -ne 0
         command rm -f -- "$temp_file"
@@ -714,7 +773,11 @@ function __forge_build_save_version --argument-names versions_file project compo
         return 1
     end
 
-    command chmod --reference="$versions_file" "$temp_file"
+    if test -f "$versions_file"
+        command chmod --reference="$versions_file" "$temp_file"
+    else
+        command chmod 644 "$temp_file"
+    end
     and command mv -- "$temp_file" "$versions_file"
     or begin
         command rm -f -- "$temp_file"
@@ -749,7 +812,8 @@ function __forge_build_usage
         'Component shorthand is also accepted, such as --sunshine VERSION.' \
         'SemVer projects use their configured default bump when omitted.' \
         'SemVer state is read from and written to versions.txt beside the' \
-        'configuration file.' \
+        'configuration file.  A SemVer component with no record there is' \
+        'treated as a fresh project, and build asks for a starting version.' \
         '' \
         'Examples:' \
         '  build actual-clerk' \
@@ -913,6 +977,7 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
     set -l current_version
     set -l target_version
     set -l should_save_version 0
+    set -l first_version 0
     set -l version_warning
 
     for component in $components
@@ -923,13 +988,29 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
 
         if test "$resolver_type" = semver
             set current_version (__forge_build_versions_get "$versions_file" "$project.$component")
-            if set -q _flag_rebuild
+            if set -q _flag_version; and not string match -qr '^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' -- "$_flag_version"
+                __forge_build_error "invalid SemVer '$_flag_version' (expected vMAJOR.MINOR.PATCH)"
+                return 2
+            end
+            if test -z "$current_version"
+                # Nothing recorded yet, so this is the project's first release.
+                # An explicit --version wins; otherwise ask, defaulting to the
+                # first version rather than bumping a version that never was.
+                if set -q _flag_rebuild
+                    __forge_build_error "component '$project.$component' has no recorded version in $versions_file to rebuild"
+                    return 1
+                end
+                if set -q _flag_version
+                    set value "$_flag_version"
+                else
+                    set value (__forge_build_prompt_version "$project" "$component" "$versions_file")
+                    or return 1
+                end
+                set first_version 1
+                set should_save_version 1
+            else if set -q _flag_rebuild
                 set value "$current_version"
             else if set -q _flag_version
-                if not string match -qr '^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' -- "$_flag_version"
-                    __forge_build_error "invalid SemVer '$_flag_version' (expected vMAJOR.MINOR.PATCH)"
-                    return 2
-                end
                 set value (__forge_build_semver_normalize "$_flag_version" "$current_version")
                 set -l comparison (__forge_build_semver_compare "$value" "$current_version")
                 if test "$comparison" -gt 0
@@ -1080,7 +1161,11 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
     end
     if test -n "$semver_component"
         if test $should_save_version -eq 1; and not set -q _flag_no_push
-            printf 'State:     save %s after successful workflow\n' "$target_version"
+            if test $first_version -eq 1
+                printf 'State:     record %s as the first version after successful workflow\n' "$target_version"
+            else
+                printf 'State:     save %s after successful workflow\n' "$target_version"
+            end
         else
             printf 'State:     unchanged\n'
         end
@@ -1170,7 +1255,11 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
     if test -n "$semver_component"; and test $should_save_version -eq 1; and not set -q _flag_no_push
         __forge_build_save_version "$versions_file" "$project" "$semver_component" "$current_version" "$target_version"
         or return 1
-        printf 'Saved %s as the current version for %s.\n' "$target_version" "$project"
+        if test $first_version -eq 1
+            printf 'Recorded %s as the first version for %s.\n' "$target_version" "$project"
+        else
+            printf 'Saved %s as the current version for %s.\n' "$target_version" "$project"
+        end
     end
 end
 

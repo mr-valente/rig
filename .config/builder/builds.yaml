@@ -87,10 +87,17 @@ projects:
     directory: openrgb-server
     recipe: compose-release
     image: valentemath/openrgb-server
+    primary_component: app
+    components:
+      app:
+        resolver: semver
+        default_bump: patch
+        build_arg: OPENRGB_SERVER_VERSION
+        build_transform: strip-v
     outputs:
       default:
         source_tag: latest
-        tags: latest
+        tags: latest {app}
 
   paperless-clerk:
     description: Paperless OCR sidecar image

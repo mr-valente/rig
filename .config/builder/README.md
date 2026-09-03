@@ -196,8 +196,8 @@ resolvers:
 | `type` | Yes | `semver` |
 | `prefix` | No | Must not be set for this resolver type |
 
-SemVer state is not stored in `builds.yaml`. Each SemVer component has one
-record in the `versions.txt` sidecar, described under
+SemVer state is not stored in `builds.yaml`. Each released SemVer component has
+one record in the `versions.txt` sidecar, described under
 [SemVer state and release selection](#semver-state-and-release-selection).
 Accepted versions have exactly three numeric parts, optionally beginning with
 lowercase `v`, with no leading zeroes except the number zero itself. Prerelease
@@ -519,7 +519,9 @@ tend.app             v0.3.4
 The sidecar and the configuration are validated together before any build,
 including `build --list`:
 
-- Every SemVer component must have exactly one record holding a valid version.
+- A SemVer component may have at most one record, and a record that is present
+  must hold a valid version. A component with no record has simply not been
+  released yet; see [First release](#first-release).
 - Every record must name a configured SemVer component. Stale records are
   rejected rather than ignored, so a removed or renamed project is noticed.
 - `current_version` in `builds.yaml` is rejected as a schema 2 leftover.
@@ -548,6 +550,9 @@ The selection options are mutually exclusive:
 | `--version VERSION` | Use an exact three-part SemVer value |
 | `--rebuild` | Reuse the recorded version without changing state |
 
+The first four options accept a component with no recorded version, described
+under [First release](#first-release); `--rebuild` requires one.
+
 A successful increment or a higher exact version is saved atomically to the
 component's record in `versions.txt`. An exact version equal to or lower than
 the recorded version does not move state; a lower version also prints a warning
@@ -561,6 +566,37 @@ in the file survive the rewrite.
 
 `--no-push` always suppresses the state update, even if the local build and tag
 operations succeed.
+
+### First release
+
+A SemVer component with no record in `versions.txt` has never been released.
+Rather than failing, `build` treats it as a fresh project and asks for its
+starting version:
+
+```text
+build: tend.app has no recorded version in /home/you/.config/builder/versions.txt.
+build: treating tend as a fresh project.
+Starting version for tend.app [v0.1.0]:
+```
+
+An empty answer accepts `v0.1.0`. Any three-part SemVer value is accepted and
+is recorded exactly as typed, so the leading `v` is part of the value only when
+it is typed. An unparseable answer is rejected and the question repeated;
+end-of-file cancels the build without changing anything.
+
+Two options skip the question:
+
+- `--version VERSION` supplies the starting version directly, which is also how
+  to start a project from a non-interactive shell.
+- `--rebuild` fails instead, because there is no recorded version to reuse.
+
+Without a terminal on standard input and without `--version`, the build fails
+rather than blocking on a question nobody can answer. Bump options are
+irrelevant here and are ignored: there is no version to increment.
+
+The version is recorded only after the whole workflow succeeds, exactly like a
+later bump. The new record is appended, padded to the column the existing
+records use, and `versions.txt` is created if it does not exist yet.
 
 ## Rebuilding externally resolved projects
 
@@ -689,8 +725,8 @@ No `components` or `primary_component` is needed.
 3. Add a project with `directory`, `recipe`, and `image`.
 4. Add components and choose a primary component when versions are involved.
 5. Map every component to a Docker `build_arg` and `build_transform`.
-6. For a SemVer component, add its starting version to `versions.txt` as
-   `PROJECT.COMPONENT VERSION`.
+6. Optionally record a SemVer component's starting version in `versions.txt`
+   as `PROJECT.COMPONENT VERSION`; the first build asks for it otherwise.
 7. Define every builder-produced image under `outputs` and list its published
    tag templates.
 8. For Compose, ensure `docker compose config --images` includes every
@@ -702,9 +738,9 @@ build --list
 build --dry-run PROJECT --set COMPONENT=VERSION
 ```
 
-Unknown fields, missing references, malformed or missing versions, stale
-`versions.txt` records, invalid templates, missing project directories, and
-mismatched Compose source images fail before the mutating build begins.
+Unknown fields, missing references, malformed versions, stale `versions.txt`
+records, invalid templates, missing project directories, and mismatched Compose
+source images fail before the mutating build begins.
 
 ## Current limitations
 
