@@ -2,7 +2,7 @@
 # This intentionally uses a small YAML subset: two-space indentation, mappings,
 # and unquoted scalar values. Space-separated tag templates replace YAML lists.
 
-schema: 2
+schema: 3
 
 settings:
   sudo: false
@@ -38,7 +38,6 @@ projects:
     components:
       app:
         resolver: semver
-        current_version: v0.2.10
         default_bump: patch
         build_arg: ACTUAL_CLERK_VERSION
         build_transform: strip-v
@@ -56,7 +55,6 @@ projects:
     components:
       app:
         resolver: semver
-        current_version: v0.7.7
         default_bump: patch
         build_arg: GRIMMORY_CLERK_VERSION
         build_transform: strip-v
@@ -103,7 +101,6 @@ projects:
     components:
       app:
         resolver: semver
-        current_version: v0.1.9
         default_bump: patch
         build_arg: PAPERLESS_CLERK_VERSION
         build_transform: strip-v
@@ -145,7 +142,6 @@ projects:
     components:
       app:
         resolver: semver
-        current_version: v0.1.1
         default_bump: patch
         build_arg: STORJ_REPORTER_VERSION
         build_transform: strip-v
@@ -188,7 +184,6 @@ projects:
     components:
       app:
         resolver: semver
-        current_version: v0.3.2
         default_bump: patch
         build_arg: TEND_VERSION
         build_transform: strip-v

@@ -1,0 +1,9 @@
+# Managed SemVer state for build.fish, kept beside builds.yaml.
+# One record per line: PROJECT.COMPONENT VERSION
+# build rewrites a record only after its whole workflow succeeds.
+
+actual-clerk.app     v0.3.3
+grimmory-clerk.app   v1.1.0
+paperless-clerk.app  v0.1.10
+storj-reporter.app   v0.1.2
+tend.app             v0.3.4

@@ -5,6 +5,8 @@ command:
 
 - `builds.yaml` describes reusable version resolvers, reusable build recipes,
   and the projects that combine them.
+- `versions.txt` records the managed SemVer state, one record per project
+  component. It is the only file a successful release rewrites.
 - The command itself lives in tacklebox, at
   `~/.config/fish/tacklebox/build.fish`. It resolves versions, runs Docker or
   Docker Compose, creates image tags, pushes them, and updates managed SemVer
@@ -60,6 +62,11 @@ The source root lookup order is:
 
 Flags take precedence over the environment. An override applies only to that
 invocation; it does not modify shell state.
+
+Managed SemVer state is not a third configurable location. `versions.txt` is a
+sidecar: it is always read from and written to the directory holding the
+configuration file, so `--config` and `BUILDER_CONFIG` carry their own version
+state with them.
 
 Runtime requirements are Fish, `awk`, Docker, Docker Compose for Compose
 recipes, and `curl` when a GitHub release must be resolved. `sudo` is required
@@ -128,10 +135,10 @@ tags: latest {app}
 
 ## Top-level structure
 
-Schema 2 recognizes exactly these top-level keys:
+Schema 3 recognizes exactly these top-level keys:
 
 ```yaml
-schema: 2
+schema: 3
 
 settings:
   sudo: true
@@ -154,9 +161,12 @@ before any build operation, including `build --list`.
 
 | Field | Required | Value |
 | --- | --- | --- |
-| `schema` | Yes | Must be `2` |
+| `schema` | Yes | Must be `3` |
 
-The command fails closed when the schema is absent or unsupported.
+The command fails closed when the schema is absent or unsupported. Schema 2
+kept each component's version in `builds.yaml` under `current_version`; migrate
+by moving every one of those values into `versions.txt` and setting
+`schema: 3`.
 
 ## `settings`
 
@@ -186,10 +196,12 @@ resolvers:
 | `type` | Yes | `semver` |
 | `prefix` | No | Must not be set for this resolver type |
 
-SemVer state is stored on the component using `current_version`. Accepted
-versions have exactly three numeric parts, optionally beginning with lowercase
-`v`, with no leading zeroes except the number zero itself. Prerelease and build
-metadata are not supported.
+SemVer state is not stored in `builds.yaml`. Each SemVer component has one
+record in the `versions.txt` sidecar, described under
+[SemVer state and release selection](#semver-state-and-release-selection).
+Accepted versions have exactly three numeric parts, optionally beginning with
+lowercase `v`, with no leading zeroes except the number zero itself. Prerelease
+and build metadata are not supported.
 
 Examples of accepted values are `0.4.2` and `v1.0.0`. Values such as `v01.2.3`,
 `1.2`, and `v1.2.3-rc1` are rejected.
@@ -347,8 +359,10 @@ components:
 | `build_transform` | Yes | `keep`, `strip-v`, or `ensure-v` before passing the build argument |
 | `repository` | GitHub resolver | GitHub repository in `OWNER/REPOSITORY` form |
 | `override_env` | No, GitHub resolver only | Environment variable that can override GitHub resolution |
-| `current_version` | SemVer resolver | Durable current version |
 | `default_bump` | SemVer resolver | `major`, `minor`, or `patch` |
+
+A SemVer component carries no version of its own. Its current version is a
+record in `versions.txt`; `current_version` here is rejected.
 
 `build_arg` and `override_env` use uppercase shell-variable syntax:
 `[A-Z_][A-Z0-9_]*`.
@@ -359,14 +373,14 @@ Resolver normalization and build transformation are distinct. For example:
 components:
   app:
     resolver: semver
-    current_version: v0.3.0
     default_bump: patch
     build_arg: APP_VERSION
     build_transform: strip-v
 ```
 
-The resolved component value and image tag can be `v0.3.1`, while the Docker
-build receives `APP_VERSION=0.3.1`. Output templates always use the resolved
+When `versions.txt` records `v0.3.0` for this component, the resolved component
+value and image tag can be `v0.3.1`, while the Docker build receives
+`APP_VERSION=0.3.1`. Output templates always use the resolved
 component value before `build_transform`.
 
 ### Component override priority
@@ -478,14 +492,51 @@ latest-with-sablier
 
 ## SemVer state and release selection
 
+### The `versions.txt` sidecar
+
+Managed SemVer state lives in `versions.txt`, always beside the configuration
+file, so `--config /path/to/builds.yaml` reads and writes
+`/path/to/versions.txt`.
+
+The format is one record per line:
+
+```text
+# Managed SemVer state for build.fish, kept beside builds.yaml.
+# One record per line: PROJECT.COMPONENT VERSION
+
+actual-clerk.app     v0.3.3
+paperless-clerk.app  v0.1.10
+tend.app             v0.3.4
+```
+
+- A key is the project name, a dot, and the component name.
+- The two fields are separated by spaces or tabs, so records can be aligned in
+  columns. A record's existing spacing is preserved when its version changes.
+- Blank lines and whole-line comments beginning with `#` are ignored.
+- Records must not be indented, must hold exactly two fields, and each key may
+  appear only once.
+
+The sidecar and the configuration are validated together before any build,
+including `build --list`:
+
+- Every SemVer component must have exactly one record holding a valid version.
+- Every record must name a configured SemVer component. Stale records are
+  rejected rather than ignored, so a removed or renamed project is noticed.
+- `current_version` in `builds.yaml` is rejected as a schema 2 leftover.
+
+Projects without a SemVer component need no record, and a configuration with no
+SemVer components at all needs no `versions.txt`.
+
+### Release selection
+
 For a SemVer project, a normal build applies the component's `default_bump`:
 
 ```fish
 build actual-clerk
 ```
 
-If `current_version` is `v0.1.0` and `default_bump` is `patch`, the target is
-`v0.1.1`.
+If the recorded version is `v0.1.0` and `default_bump` is `patch`, the target
+is `v0.1.1`.
 
 The selection options are mutually exclusive:
 
@@ -495,24 +546,25 @@ The selection options are mutually exclusive:
 | `--minor` | Increment minor and reset patch to zero |
 | `--patch` | Increment patch |
 | `--version VERSION` | Use an exact three-part SemVer value |
-| `--rebuild` | Reuse `current_version` without changing state |
+| `--rebuild` | Reuse the recorded version without changing state |
 
-A successful increment or a higher exact version is saved atomically to
-`current_version`. An exact version equal to or lower than the current version
-does not move state; a lower version also prints a warning because publishing
-it can repoint `latest` backward.
+A successful increment or a higher exact version is saved atomically to the
+component's record in `versions.txt`. An exact version equal to or lower than
+the recorded version does not move state; a lower version also prints a warning
+because publishing it can repoint `latest` backward.
 
 State is updated only after the entire configured workflow succeeds. With a
 pushing recipe, every tag must push successfully. The update rereads the
-expected version before replacing `builds.yaml`, so a concurrent change to the
-same component is not overwritten.
+expected version before replacing `versions.txt`, so a concurrent change to the
+same component is not overwritten. Comments, record order, and column alignment
+in the file survive the rewrite.
 
 `--no-push` always suppresses the state update, even if the local build and tag
 operations succeed.
 
 ## Rebuilding externally resolved projects
 
-External component versions are not persisted in `builds.yaml`. Therefore:
+External component versions are not recorded in `versions.txt`. Therefore:
 
 ```fish
 build --rebuild steamboat
@@ -569,7 +621,6 @@ projects:
     components:
       app:
         resolver: semver
-        current_version: v0.4.2
         default_bump: patch
         build_arg: EXAMPLE_API_VERSION
         build_transform: strip-v
@@ -579,8 +630,14 @@ projects:
         tags: latest {app}
 ```
 
+with one record in `versions.txt`:
+
+```text
+example-api.app v0.4.2
+```
+
 This builds `owner/example-api:latest`, adds the next version tag, pushes both,
-and then saves the successful version.
+and then saves the successful version back to `versions.txt`.
 
 ### GitHub-pinned Compose image
 
@@ -632,20 +689,22 @@ No `components` or `primary_component` is needed.
 3. Add a project with `directory`, `recipe`, and `image`.
 4. Add components and choose a primary component when versions are involved.
 5. Map every component to a Docker `build_arg` and `build_transform`.
-6. Define every builder-produced image under `outputs` and list its published
+6. For a SemVer component, add its starting version to `versions.txt` as
+   `PROJECT.COMPONENT VERSION`.
+7. Define every builder-produced image under `outputs` and list its published
    tag templates.
-7. For Compose, ensure `docker compose config --images` includes every
+8. For Compose, ensure `docker compose config --images` includes every
    configured source image name under the configured environment.
-8. Validate the result before building:
+9. Validate the result before building:
 
 ```fish
 build --list
 build --dry-run PROJECT --set COMPONENT=VERSION
 ```
 
-Unknown fields, missing references, malformed versions, invalid templates,
-missing project directories, and mismatched Compose source images fail before
-the mutating build begins.
+Unknown fields, missing references, malformed or missing versions, stale
+`versions.txt` records, invalid templates, missing project directories, and
+mismatched Compose source images fail before the mutating build begins.
 
 ## Current limitations
 
