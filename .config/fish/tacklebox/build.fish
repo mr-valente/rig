@@ -3,6 +3,9 @@
 # Reads its configuration from $XDG_CONFIG_HOME/builder/builds.yaml and builds
 # the projects checked out under $HOME/forge.  Both locations can be overridden
 # -- see $BUILDER_CONFIG / --config and $BUILDER_FORGE_DIR / --forge-dir below.
+#
+# Managed SemVer state lives outside the configuration, in a versions.txt
+# sidecar beside builds.yaml, so a successful release rewrites only that file.
 
 function __forge_build_error
     printf 'build: %s\n' "$argv" >&2
@@ -31,6 +34,69 @@ function __forge_build_forge_dir --argument-names forge_override
     else
         builtin path resolve "$HOME/forge" 2>/dev/null
     end
+end
+
+# Managed SemVer state is a sidecar rather than a second configurable location:
+# versions.txt always sits beside the configuration file, so --config and
+# $BUILDER_CONFIG carry their own version state along with them.
+function __forge_build_versions_file --argument-names config_file
+    if test -z "$config_file"
+        return 1
+    end
+    printf '%s/versions.txt\n' (builtin path dirname "$config_file")
+end
+
+# versions.txt holds one "PROJECT.COMPONENT VERSION" record per line.  Blank
+# lines and whole-line comments are ignored; the two fields are separated by
+# spaces or tabs so records can stay column-aligned.
+function __forge_build_versions_lint --argument-names versions_file
+    command awk '
+        /^[[:space:]]*($|#)/ { next }
+
+        {
+            if ($0 ~ /^[[:space:]]/) {
+                print "records must not be indented at line " NR > "/dev/stderr"
+                failed = 1
+                next
+            }
+            if (NF != 2) {
+                print "expected PROJECT.COMPONENT VERSION at line " NR > "/dev/stderr"
+                failed = 1
+                next
+            }
+            if ($1 !~ /^[A-Za-z0-9][A-Za-z0-9_-]*\.[a-z][a-z0-9_]*$/) {
+                print "invalid component key at line " NR ": " $1 > "/dev/stderr"
+                failed = 1
+                next
+            }
+            if (seen[$1]++) {
+                print "duplicate component key at line " NR ": " $1 > "/dev/stderr"
+                failed = 1
+            }
+        }
+
+        END { exit failed ? 1 : 0 }
+    ' "$versions_file"
+end
+
+function __forge_build_versions_get --argument-names versions_file key
+    if test -z "$versions_file"; or not test -f "$versions_file"
+        return 0
+    end
+    command awk -v wanted="$key" '
+        /^[[:space:]]*($|#)/ { next }
+        NF == 2 && $1 == wanted { print $2 }
+    ' "$versions_file"
+end
+
+function __forge_build_versions_keys --argument-names versions_file
+    if test -z "$versions_file"; or not test -f "$versions_file"
+        return 0
+    end
+    command awk '
+        /^[[:space:]]*($|#)/ { next }
+        NF == 2 { print $1 }
+    ' "$versions_file"
 end
 
 function __forge_build_yaml_lint --argument-names config_file
@@ -219,8 +285,26 @@ function __forge_build_validate_config --argument-names config_file forge_dir
         return 1
     end
 
-    if test (__forge_build_config_get "$config_file" schema) != 2
-        __forge_build_error "unsupported or missing schema in $config_file (expected schema: 2)"
+    set -l versions_file (__forge_build_versions_file "$config_file")
+    if test -f "$versions_file"
+        if not test -r "$versions_file"
+            __forge_build_error "version state file is not readable: $versions_file"
+            return 1
+        end
+        __forge_build_versions_lint "$versions_file"
+        or begin
+            __forge_build_error "invalid records in $versions_file"
+            return 1
+        end
+    end
+
+    set -l schema (__forge_build_config_get "$config_file" schema)
+    if test "$schema" = 2
+        __forge_build_error "schema 2 in $config_file is no longer supported: move every current_version into $versions_file and set schema: 3"
+        return 1
+    end
+    if test "$schema" != 3
+        __forge_build_error "unsupported or missing schema in $config_file (expected schema: 3)"
         return 1
     end
 
@@ -304,6 +388,7 @@ function __forge_build_validate_config --argument-names config_file forge_dir
         __forge_build_error 'at least one project must be configured'
         return 1
     end
+    set -l version_keys
     for project in $projects
         set -l path "projects.$project"
         for field in (__forge_build_config_children "$config_file" "$path")
@@ -376,7 +461,11 @@ function __forge_build_validate_config --argument-names config_file forge_dir
             end
             set -l component_path "$path.components.$component"
             for field in (__forge_build_config_children "$config_file" "$component_path")
-                if not contains -- "$field" resolver repository current_version default_bump build_arg build_transform override_env
+                if test "$field" = current_version
+                    __forge_build_error "component '$project.$component' defines current_version; SemVer state now lives in $versions_file"
+                    return 1
+                end
+                if not contains -- "$field" resolver repository default_bump build_arg build_transform override_env
                     __forge_build_error "unknown field '$field' for component '$project.$component'"
                     return 1
                 end
@@ -406,10 +495,15 @@ function __forge_build_validate_config --argument-names config_file forge_dir
             set -l resolver_type (__forge_build_config_get "$config_file" "resolvers.$resolver.type")
             if test "$resolver_type" = semver
                 set -a semver_components "$component"
-                set -l current (__forge_build_config_get "$config_file" "$component_path.current_version")
+                set -a version_keys "$project.$component"
+                set -l current (__forge_build_versions_get "$versions_file" "$project.$component")
                 set -l default_bump (__forge_build_config_get "$config_file" "$component_path.default_bump")
+                if test -z "$current"
+                    __forge_build_error "component '$project.$component' has no recorded version in $versions_file"
+                    return 1
+                end
                 if not string match -qr '^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' -- "$current"
-                    __forge_build_error "component '$project.$component' has invalid current_version '$current'"
+                    __forge_build_error "component '$project.$component' has invalid version '$current' in $versions_file"
                     return 1
                 end
                 if not contains -- "$default_bump" major minor patch
@@ -467,6 +561,13 @@ function __forge_build_validate_config --argument-names config_file forge_dir
                     or return 1
                 end
             end
+        end
+    end
+
+    for key in (__forge_build_versions_keys "$versions_file")
+        if not contains -- "$key" $version_keys
+            __forge_build_error "$versions_file records '$key', which is not a configured SemVer component"
+            return 1
         end
     end
 end
@@ -574,59 +675,50 @@ function __forge_build_print_command
     string join ' ' -- $escaped
 end
 
-function __forge_build_save_version --argument-names config_file project component expected_version new_version
-    set -l version_path "projects.$project.components.$component.current_version"
-    set -l observed_version (__forge_build_config_get "$config_file" "$version_path")
+function __forge_build_save_version --argument-names versions_file project component expected_version new_version
+    set -l key "$project.$component"
+    set -l observed_version (__forge_build_versions_get "$versions_file" "$key")
     if test "$observed_version" != "$expected_version"
-        __forge_build_error "not updating $config_file: '$project.$component' changed from $expected_version to $observed_version during the build"
+        __forge_build_error "not updating $versions_file: '$key' changed from $expected_version to $observed_version during the build"
         return 1
     end
 
-    set -l config_dir (builtin path dirname "$config_file")
-    set -l temp_file (command mktemp "$config_dir/.builds.yaml.XXXXXX")
+    set -l versions_dir (builtin path dirname "$versions_file")
+    set -l temp_file (command mktemp "$versions_dir/.versions.txt.XXXXXX")
     if test $status -ne 0 -o -z "$temp_file"
-        __forge_build_error "could not create a temporary configuration file in $config_dir"
+        __forge_build_error "could not create a temporary version state file in $versions_dir"
         return 1
     end
 
-    command awk -v target_project="$project" -v target_component="$component" -v replacement="$new_version" '
-        /^  [A-Za-z0-9][A-Za-z0-9_.-]*:[[:space:]]*$/ {
-            project = $0
-            sub(/^  /, "", project)
-            sub(/:[[:space:]]*$/, "", project)
-        }
-        project == target_project && /^    components:[[:space:]]*$/ {
-            in_components = 1
-            next_line = 1
-        }
-        in_components && /^    [A-Za-z0-9]/ && !/^    components:/ {
-            in_components = 0
-        }
-        in_components && /^      [A-Za-z0-9][A-Za-z0-9_]*:[[:space:]]*$/ {
-            component = $0
-            sub(/^      /, "", component)
-            sub(/:[[:space:]]*$/, "", component)
-        }
-        project == target_project && in_components && component == target_component && /^        current_version:[[:space:]]*/ {
-            print "        current_version: " replacement
+    # The record is rewritten in place, reusing its existing separator so that
+    # column-aligned files stay aligned.
+    command awk -v wanted="$key" -v replacement="$new_version" '
+        /^[[:space:]]*($|#)/ { print; next }
+
+        NF == 2 && $1 == wanted {
+            separator = $0
+            sub(/^[^[:space:]]+/, "", separator)
+            sub(/[^[:space:]]+[[:space:]]*$/, "", separator)
+            printf "%s%s%s\n", $1, separator, replacement
             changed++
             next
         }
+
         { print }
         END { if (changed != 1) exit 42 }
-    ' "$config_file" >"$temp_file"
+    ' "$versions_file" >"$temp_file"
     set -l awk_status $status
     if test $awk_status -ne 0
         command rm -f -- "$temp_file"
-        __forge_build_error "could not update current_version for '$project.$component'"
+        __forge_build_error "could not update the recorded version for '$key'"
         return 1
     end
 
-    command chmod --reference="$config_file" "$temp_file"
-    and command mv -- "$temp_file" "$config_file"
+    command chmod --reference="$versions_file" "$temp_file"
+    and command mv -- "$temp_file" "$versions_file"
     or begin
         command rm -f -- "$temp_file"
-        __forge_build_error "could not atomically replace $config_file"
+        __forge_build_error "could not atomically replace $versions_file"
         return 1
     end
 end
@@ -656,6 +748,8 @@ function __forge_build_usage
         '' \
         'Component shorthand is also accepted, such as --sunshine VERSION.' \
         'SemVer projects use their configured default bump when omitted.' \
+        'SemVer state is read from and written to versions.txt beside the' \
+        'configuration file.' \
         '' \
         'Examples:' \
         '  build actual-clerk' \
@@ -694,6 +788,7 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
     set -l forge_dir (__forge_build_forge_dir "$_flag_forge_dir")
     __forge_build_validate_config "$config_file" "$forge_dir"
     or return 1
+    set -l versions_file (__forge_build_versions_file "$config_file")
 
     set -l projects (__forge_build_config_children "$config_file" projects)
     if set -q _flag_list
@@ -827,7 +922,7 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
         set -l value
 
         if test "$resolver_type" = semver
-            set current_version (__forge_build_config_get "$config_file" "$component_path.current_version")
+            set current_version (__forge_build_versions_get "$versions_file" "$project.$component")
             if set -q _flag_rebuild
                 set value "$current_version"
             else if set -q _flag_version
@@ -963,7 +1058,7 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
     end
     if set -q _flag_rebuild
         if test -n "$semver_component"
-            printf 'Rebuild:   reused configured version %s\n' "$current_version"
+            printf 'Rebuild:   reused recorded version %s\n' "$current_version"
         else if test (count $components) -gt 0
             printf 'Rebuild:   resolved latest components; tags stay unchanged when upstream latest is unchanged\n'
         else
@@ -1073,7 +1168,7 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
     popd >/dev/null
 
     if test -n "$semver_component"; and test $should_save_version -eq 1; and not set -q _flag_no_push
-        __forge_build_save_version "$config_file" "$project" "$semver_component" "$current_version" "$target_version"
+        __forge_build_save_version "$versions_file" "$project" "$semver_component" "$current_version" "$target_version"
         or return 1
         printf 'Saved %s as the current version for %s.\n' "$target_version" "$project"
     end
