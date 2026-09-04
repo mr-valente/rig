@@ -1054,6 +1054,14 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
         set -a component_pairs "$component=$value"
     end
 
+    # Only a managed SemVer component leaves version state to protect, so a
+    # failure in a project pegged to an external release says nothing about
+    # versions it never tracked.
+    set -l state_note
+    if test -n "$semver_component"; and test $should_save_version -eq 1; and not set -q _flag_no_push
+        set state_note '; version state was not changed'
+    end
+
     set -l build_options
     set -l compose_environment
     for index in (seq (count $component_names))
@@ -1221,7 +1229,7 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
     set -l build_status $status
     if test $build_status -ne 0
         popd >/dev/null
-        __forge_build_error "'$project' build failed with status $build_status; version state was not changed"
+        __forge_build_error "'$project' build failed with status $build_status$state_note"
         return $build_status
     end
 
@@ -1245,7 +1253,7 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
             set -l push_status $status
             if test $push_status -ne 0
                 popd >/dev/null
-                __forge_build_error "pushing '$target_image' failed with status $push_status; version state was not changed"
+                __forge_build_error "pushing '$target_image' failed with status $push_status$state_note"
                 return $push_status
             end
         end
