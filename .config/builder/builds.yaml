@@ -29,6 +29,26 @@ recipes:
     push: true
 
 projects:
+  athenaeum:
+    description: Athenaeum ARM64 site and edge images
+    directory: athenaeum/docker
+    recipe: compose-release
+    image: valentemath/athenaeum
+    primary_component: app
+    components:
+      app:
+        resolver: semver
+        default_bump: patch
+        build_arg: ATHENAEUM_VERSION
+        build_transform: strip-v
+    outputs:
+      site:
+        source_tag: latest
+        tags: latest {app}
+      edge:
+        source_tag: latest-edge
+        tags: latest-edge {app}-edge
+
   actual-clerk:
     description: Actual Budget document sidecar image
     directory: actual-clerk
@@ -45,6 +65,26 @@ projects:
       default:
         source_tag: latest
         tags: latest {app}
+
+  bernoulli:
+    description: Bernoulli standalone and Athenaeum image lines
+    directory: bernoulli/docker
+    recipe: compose-release
+    image: valentemath/bernoulli
+    primary_component: app
+    components:
+      app:
+        resolver: semver
+        default_bump: patch
+        build_arg: BERNOULLI_VERSION
+        build_transform: strip-v
+    outputs:
+      standalone:
+        source_tag: latest
+        tags: latest {app}
+      athenaeum:
+        source_tag: latest-athenaeum
+        tags: latest-athenaeum {app}-athenaeum
 
   grimmory-clerk:
     description: Grimmory library sidecar image
@@ -115,6 +155,26 @@ projects:
       default:
         source_tag: latest
         tags: latest {app}
+
+  quacktuaries:
+    description: Quacktuaries standalone and Athenaeum image lines
+    directory: quacktuaries/docker
+    recipe: compose-release
+    image: valentemath/quacktuaries
+    primary_component: app
+    components:
+      app:
+        resolver: semver
+        default_bump: patch
+        build_arg: QUACKTUARIES_VERSION
+        build_transform: strip-v
+    outputs:
+      standalone:
+        source_tag: latest
+        tags: latest {app}
+      athenaeum:
+        source_tag: latest-athenaeum
+        tags: latest-athenaeum {app}-athenaeum
 
   steamboat:
     description: Sunshine image pinned to Sunshine and USBoss releases
