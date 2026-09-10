@@ -122,6 +122,23 @@ projects:
         source_tag: latest{tag_suffix}
         tags: latest{tag_suffix} {lemonade}{tag_suffix}
 
+  oci-monitor:
+    description: Read-only Oracle Cloud monitor for the Athenaeum host
+    directory: oci-monitor
+    recipe: docker-release
+    image: valentemath/oci-monitor
+    primary_component: app
+    components:
+      app:
+        resolver: semver
+        default_bump: patch
+        build_arg: OCI_MONITOR_VERSION
+        build_transform: strip-v
+    outputs:
+      default:
+        source_tag: latest
+        tags: latest {app}
+
   openrgb-server:
     description: OpenRGB compose image
     directory: openrgb-server
