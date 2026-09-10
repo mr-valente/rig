@@ -1,3 +1,4 @@
 .rig
 .gitconfig
 .config/fish/fish_variables
+.config/builder/versions.txt
