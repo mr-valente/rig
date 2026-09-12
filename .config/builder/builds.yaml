@@ -86,6 +86,23 @@ projects:
         source_tag: latest-athenaeum
         tags: latest-athenaeum {app}-athenaeum
 
+  claude-monitor:
+    description: Claude Code quota bridge for Homepage
+    directory: claude-monitor
+    recipe: docker-release
+    image: valentemath/claude-monitor
+    primary_component: app
+    components:
+      app:
+        resolver: semver
+        default_bump: patch
+        build_arg: CLAUDE_MONITOR_VERSION
+        build_transform: strip-v
+    outputs:
+      default:
+        source_tag: latest
+        tags: latest {app}
+
   grimmory-clerk:
     description: Grimmory library sidecar image
     directory: grimmory-clerk
