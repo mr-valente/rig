@@ -1,0 +1,6 @@
+server:
+  base_url: 'https://hister.yuler.net'
+crawler:
+  backend: 'http'
+  timeout: 15
+  delay: 1
