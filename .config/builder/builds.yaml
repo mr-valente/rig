@@ -139,6 +139,26 @@ projects:
         source_tag: latest{tag_suffix}
         tags: latest{tag_suffix} {lemonade}{tag_suffix}
 
+  muon:
+    description: Muon kill-switch namespace holder and exit-node controller
+    directory: muon/docker
+    recipe: compose-release
+    image: valentemath/muon
+    primary_component: app
+    components:
+      app:
+        resolver: semver
+        default_bump: patch
+        build_arg: MUON_VERSION
+        build_transform: strip-v
+    outputs:
+      net:
+        source_tag: latest-net
+        tags: latest-net {app}-net
+      controller:
+        source_tag: latest-controller
+        tags: latest-controller {app}-controller
+
   oci-monitor:
     description: Read-only Oracle Cloud monitor for the Athenaeum host
     directory: oci-monitor
