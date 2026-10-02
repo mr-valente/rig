@@ -48,6 +48,9 @@ projects:
       edge:
         source_tag: latest-edge
         tags: latest-edge {app}-edge
+      accounts:
+        source_tag: latest-accounts
+        tags: latest-accounts {app}-accounts
 
   actual-clerk:
     description: Actual Budget document sidecar image
