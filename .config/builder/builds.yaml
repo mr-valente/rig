@@ -89,6 +89,26 @@ projects:
         source_tag: latest-athenaeum
         tags: latest-athenaeum {app}-athenaeum
 
+  srs:
+    description: SRS standalone and Athenaeum image lines
+    directory: srs/docker
+    recipe: compose-release
+    image: valentemath/srs
+    primary_component: app
+    components:
+      app:
+        resolver: semver
+        default_bump: patch
+        build_arg: SRS_VERSION
+        build_transform: strip-v
+    outputs:
+      standalone:
+        source_tag: latest
+        tags: latest {app}
+      athenaeum:
+        source_tag: latest-athenaeum
+        tags: latest-athenaeum {app}-athenaeum
+
   claude-monitor:
     description: Claude Code quota bridge for Homepage
     directory: claude-monitor
