@@ -665,6 +665,62 @@ function __forge_build_expand_template --argument-names template tag_suffix
     printf '%s\n' "$result"
 end
 
+function __forge_build_ensure_emulation --argument-names use_sudo --description 'Register QEMU binfmt handlers for foreign Compose platforms'
+    # The kernel forgets binfmt_misc registrations on reboot, so an ARM
+    # build on an AMD64 workstation fails with "exec format error" until
+    # someone re-runs the registration. Check what Compose is about to
+    # target and register any missing handler right here, right now.
+    set -l native (uname -m)
+    set -l missing
+    for platform in $argv[2..]
+        set -l parts (string split '/' -- "$platform")
+        if test (count $parts) -lt 2; or test "$parts[1]" != linux
+            continue
+        end
+        set -l arch "$parts[2]"
+        set -l handler
+        switch "$arch"
+            case amd64
+                test "$native" = x86_64; and continue
+                set handler qemu-x86_64
+            case 386
+                contains -- "$native" x86_64 i686; and continue
+                set handler qemu-i386
+            case arm64
+                test "$native" = aarch64; and continue
+                set handler qemu-aarch64
+            case arm
+                contains -- "$native" aarch64 armv7l; and continue
+                set handler qemu-arm
+            case riscv64 ppc64le s390x
+                test "$native" = "$arch"; and continue
+                set handler "qemu-$arch"
+            case '*'
+                continue
+        end
+        if test -e "/proc/sys/fs/binfmt_misc/$handler"
+            continue
+        end
+        contains -- "$arch" $missing; or set -a missing "$arch"
+    end
+    if test (count $missing) -eq 0
+        return 0
+    end
+
+    set -l run_command
+    if test "$use_sudo" = true
+        set run_command sudo
+    end
+    set -a run_command docker run --privileged --rm tonistiigi/binfmt --install (string join ',' -- $missing)
+    printf 'Emulation: registering %s QEMU handler(s) for this boot\n' (string join ', ' -- $missing)
+    command $run_command >/dev/null
+    set -l run_status $status
+    if test $run_status -ne 0
+        __forge_build_error "QEMU registration failed with status $run_status; run manually: "(__forge_build_print_command $run_command)
+        return $run_status
+    end
+end
+
 function __forge_build_print_command
     set -l escaped
     for argument in $argv
@@ -1222,6 +1278,13 @@ function build --description 'Resolve, build, tag, and push a configured Docker 
                 __forge_build_error "Compose does not produce configured source image '$source_image'"
                 return 1
             end
+        end
+
+        set -l compose_platforms (command $compose_config_command[1..-2] 2>/dev/null | string replace -rf '^\s*platform:\s*(\S+)\s*$' '$1')
+        __forge_build_ensure_emulation "$use_sudo" $compose_platforms
+        or begin
+            popd >/dev/null
+            return 1
         end
     end
 
