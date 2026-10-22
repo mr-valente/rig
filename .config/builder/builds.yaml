@@ -109,6 +109,26 @@ projects:
         source_tag: latest-athenaeum
         tags: latest-athenaeum {app}-athenaeum
 
+  statistically-speaking:
+    description: Statistically Speaking standalone and Athenaeum image lines
+    directory: statistically-speaking/docker
+    recipe: compose-release
+    image: valentemath/statistically-speaking
+    primary_component: app
+    components:
+      app:
+        resolver: semver
+        default_bump: patch
+        build_arg: STATISTICALLY_SPEAKING_VERSION
+        build_transform: strip-v
+    outputs:
+      standalone:
+        source_tag: latest
+        tags: latest {app}
+      athenaeum:
+        source_tag: latest-athenaeum
+        tags: latest-athenaeum {app}-athenaeum
+
   claude-monitor:
     description: Claude Code quota bridge for Homepage
     directory: claude-monitor
